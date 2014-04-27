@@ -3,4 +3,5 @@ Grid generation with CAS maxima
 
 * Usage
   [[splitter-with-circle.mac]] :: an example of grid generation
+  [[splitter.mac]]             :: an old version of grid generation
 
