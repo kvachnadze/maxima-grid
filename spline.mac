@@ -1,0 +1,240 @@
+/*
+maxima -r "rscale: 3$ phiscale: 3$ batchload(\"spline.mac\")$"
+*/
+
+load("interpol");
+load("basic");
+
+nijk2rpz(nijk):= block([n: first(nijk), i: second(nijk), j: third(nijk), k: fourth(nijk)],
+  [part(rad_list, i), part(phi_list, n, j), part(z_list, k)]);
+
+rpz2xyz(rpz):=  block([r: first(rpz), p: second(rpz), z: third(rpz)],
+  float([r*cos(p/180*%pi), r*sin(p/180*%pi), z]));
+
+/*
+(%i1) get_chunks_borders([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3);
+(%o1)                               [3, 6]
+*/
+get_chunks_borders(lst, m):=makelist(quotient(length(lst), m)*n, n, m-1);
+
+/*
+Split a list into balanced chunks
+(%i1) split_in_chunks([10, 20, 30, 40, 50], 5);
+(%o1)                   [[10], [20], [30], [40], [50]]
+(%i2) split_in_chunks([10, 20, 30, 40, 50], 3);
+(%o2)                     [[10, 20, 30], [40], [50]]
+*/
+split_in_chunks(lst, m):= block([out: [], c: [], n: length(lst), sp, prederror: true],
+  if n<m then error("split_in_chunks: length(lst) < m"), 
+  sp: get_chunks_borders(lst, m),
+  for q thru n do (push(part(lst, n-q+1), c),
+    if member(q, sp) then (push(c, out), c: [])),
+  if not emptyp(c) then push(c, out),
+  out);
+
+/*
+(%i1) connect_chunks(split_in_chunks([10, 20, 30, 40], 2));
+(%o1)                      [[10, 20], [20, 30, 40]]
+*/
+connect_chunks(l):=block([out: [first(l)]],
+  for idx: 2 thru length(l) do block([lel: last(part(l, idx-1)), newl],
+    newl: cons(lel, part(l, idx)),
+    out: endcons(newl, out)),
+  out);
+     
+/*
+returns a list of first differences
+lst[2] - lst[1], ... , lst[n] - lst[n-1]
+*/
+fdiff(lst):= block([out: []], for q thru length(lst)-1 do out: cons(part(lst, q+1) - part(lst, q), out), reverse(out));
+
+/*
+(%i1) idx_after([1, 2, 3, 4], 2.5);
+(%o1)                                  3
+(%i2) idx_after([1, 2, 3, 4], 4.5);
+(%o2)                                 end
+*/
+idx_after(lst, pos):= block([eps: 1e-20],
+  if not listp(lst) then error("first argument of `idx_after' must be a list"),
+  if listp(first(lst)) then error("first argument of 'idx_after' must be a flat list"),
+  catch(for q thru length(lst) do if part(lst, q)>pos-eps then throw(q), 'end));
+
+/*
+(%i1) idx_after_nested([[1, 2, 3, 4], [5, 6, 7]], 2.5);
+(%o1)                               [1, 3]
+(%i2) idx_after_nested([[1, 2, 3, 4], [5, 6, 7]], 6.5);
+(%o2)                               [2, 3]
+*/
+idx_after_nested(lst, pos):= block([idx],
+  if not listp(lst) then error("first argument of `idx_after_nested' must be a list"),
+  if not every('listp, lst) then error("first argument of `idx_after_nested' must be a nested list"),
+  catch(for n thru length(lst) do if (idx: idx_after(part(lst, n), pos))#'end then throw([n, idx]), 'end));
+
+
+/*
+(%i1) maplist_in_index_interval(f, [10, 20, 30, 40, 50], 2, 3);
+(%o1)                     [10, f(20), f(30), 40, 50]
+*/
+maplist_in_index_interval(f, lst, imin, imax)::= buildq([f, imin, imax, lst],
+  block([out: [], prederror: true],
+    for q thru length(lst) do push(if q>=imin and q<=imax then f(part(lst, q)) else part(lst, q), out),
+    reverse(out)));
+
+/*
+places a cell center at `center' by re-scale of the grid in the interval [pmin, pmax]
+(%i52) fit_center([1, 2, 3, 4], 2+1/4, 1.5, 3.5);
+                                     9  13
+(%o52)                           [1, -, --, 4]
+                                     4  4
+*/
+fit_center(l, center, pmin, pmax):= block([lst: copylist(l), imin, imax, ia, ib, xa, xb, del, fun],
+  imin  : idx_after(lst, pmin) - 1,
+  imax  : idx_after(lst, pmax),
+  ia    : idx_after(lst, center),
+  ib    : ia  - 1,
+  xa    : part(lst, ia),
+  xb    : part(lst, ib),
+  del   : xa - xb,
+  fun   : change_scale(part(lst, imin), xb, part(lst, imin), center ),
+  lst   : maplist_in_index_interval(fun, lst, imin, ib),
+  fun   : change_scale(xa, part(lst, imax), center + del, part(lst, imax)),
+  lst   : maplist_in_index_interval(fun, lst, ia,   imax),
+  lst);
+
+/*
+returns a spline with zero derivatives at the ends
+plot2d(build_spline(1, 1, 2, 2)(x), [x, 1, 2]);
+*/
+build_spline(x1, y1, x2, y2):= block([p],
+  p:[[x1,y1], [x1+1/3*(x2-x1), y1+2/10*(y2-y1)], [x1+2/3*(x2-x1),y1+8/10*(y2-y1)], [x2,y2]],
+  subst(body=cspline(p,'d1=0,'dn=0), lambda([x], body)));
+
+/*
+replaces 'join by spline interpolations in the list
+*/
+replace_join(lst):= block([out: []],
+  for q thru length(lst) do
+  if part(lst, q)='join then block([prv: part(lst, q-1), nxt: part(lst, q+1)],
+    out: endcons([second(prv), first(nxt), build_spline(second(prv), third(prv), first(nxt), third(nxt))], out))
+  else out: endcons(part(lst, q), out),
+  out);
+
+/* return a function which does a linear re-scaling
+x1 -> y1
+x2 -> y2
+(%i3) change_scale(0, 1, 100, 200)(0.5);
+(%o3)                                150.0
+*/
+change_scale(x1, x2, y1, y2)::=buildq([body: (x - x1)/(x2-x1)*(y2-y1) + y1], lambda([x], body));
+
+define_variable(phiscale, 4, any);
+phispl: [
+[180, 280, 2.6*phiscale],
+'join,
+[330, 390, 1.1983*phiscale],
+'join,
+[440, 540, 2.6*phiscale] ]$
+phispl: replace_join(phispl)$
+
+define_variable(rscale, 4, any);
+radspl: [
+[ 0.5,  0.6, 0.01*rscale],
+'join,
+[ 5.0, 15.0, 0.13*rscale],
+[15.0, 50.0, build_spline(15.0, 0.13*rscale, 50.0, 0.9*rscale)] ]$
+radspl: replace_join(radspl)$
+
+find_f(x, z):= catch(for lst in z do if x>=first(lst) and x<second(lst)
+  then throw(third(lst)), 'end);
+
+delta_g(x, z):= block([f: find_f(x, z)], if atom(f) then f else f(x));
+/*
+load("draw");
+draw2d( explicit(lambda([x], delta_g(x, phispl)), x, 180, 540));
+draw2d( explicit(lambda([x], delta_g(x, radspl)), x, 0.5, 50));
+*/
+
+phi0: 180;
+phi: phi0;
+phi_list: [];
+while (df: delta_g(phi, phispl))#'end do (
+  phi_list: endcons(phi, phi_list),
+  phi: phi + df);
+phi_list: maplist( change_scale(lmin(phi_list), lmax(phi_list), 180, 180 + 360), phi_list)$
+write_data(maplist("[", rest(phi_list, -1), fdiff(phi_list)),
+  "dphi.org");
+phi_list: fit_center(phi_list, 270, 270 - 80, 270 + 80)$
+phi_list: fit_center(phi_list, 450, 450 - 80, 450 + 80)$
+
+rad0: 0.5;
+rad: rad0;
+rad_list: [];
+while (df: delta_g(rad, radspl))#'end do (
+  rad_list: endcons(rad, rad_list),
+  rad: rad + df);
+
+with_stdout("cuts.dat", 
+  print(270,    idx_after(phi_list, 270)-2),
+  print(450,    idx_after(phi_list, 450)-2),
+  print(540,    length(phi_list) - 1),
+  print("rmax", length(rad_list) - 1));
+
+write_data(maplist("[", rest(phi_list, -1), fdiff(phi_list)),
+  "dphi.dat");
+write_data(maplist("[", rest(rad_list, -1), fdiff(rad_list)),
+  "drad.dat");
+
+print_coord(rad_list, phi_list, z_list, coord)::=buildq([rad_list, phi_list, z_list, coord],
+  for z in z_list   do
+  for p in phi_list do
+  block([cp: float(cos(p/180*%pi)), sp: float(sin(p/180*%pi))],
+    for r in rad_list do (?princ(coord), ?princ(" "))));
+
+define_variable(nblock, 4, integer);
+z_list: [1, 2, 3];
+nr  : length(rad_list);
+nz  : length(z_list);
+phi_list: split_in_chunks(phi_list, nblock)$
+phi_list: connect_chunks(phi_list)$
+
+with_stdout("grid.fmt",
+  printf(true, "~d~%", nblock),
+  for iblock thru nblock do printf(true, "~d ~d ~d ", nr, length(part(phi_list, iblock)), nz),
+  for iblock thru nblock do block([c_phi_list: part(phi_list, iblock)],
+    printf(true, "~%"),
+    print_coord(rad_list, c_phi_list, z_list, r*cp),
+    print_coord(rad_list, c_phi_list, z_list, r*sp),
+    print_coord(rad_list, c_phi_list, z_list, z)));
+
+with_stdout("cuts.multiblock.dat",
+  block([phi, iblock],
+    [iblock, phi]: idx_after_nested(phi_list, 270),
+    print(270,  iblock, phi-2),
+    [iblock, phi]: idx_after_nested(phi_list, 450),
+    print(450,  iblock, phi-2),
+    iblock:  length(phi_list),
+    phi   :  length(last(phi_list)),
+    print(540,    iblock, phi - 1),
+    print("rmax", length(rad_list) - 1),
+    for iblock thru nblock do
+    print("iblock", iblock, length(part(phi_list, iblock))-1)));
+
+
+/* create monitor points */
+mpoints: [ [0.6, 360, 0], [0.7, 360, 0], [1.0, 360, 0] , [2.0, 360, 0] ];
+mp: maplist(lambda([el], block([iblock, j_phi],
+      [iblock, j_phi]: idx_after_nested(phi_list, second(el)),
+      [iblock, idx_after(rad_list, first(el))  - 1, j_phi - 1, idx_after(z_list, third(el))])),
+      mpoints);
+
+nfreq: 100;
+istate_vector: 2;
+mp_xyz: maplist( lambda([x], rpz2xyz(nijk2rpz(x))), mp);
+with_stdout("mpoints.dat",
+  printf(true, "number of control points:~6,d~%", length(mp)),
+  printf(true, "monitor control1:       ~6,d ~{~6,d ~}    ~6,d~%", istate_vector, first(mp), nfreq),
+  for idx: 2 thru length(mp) do
+      printf(true, "monitor control~d:              ~{~6,d ~}~%", idx, part(mp, idx)),
+  newline(),
+  for idx: 1 thru length(mp) do
+      printf(true, "#monitor control~d: ~{~20,10g ~}~%", idx, part(mp_xyz, idx)));

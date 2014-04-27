@@ -1,0 +1,184 @@
+%eps%: 1e-10;
+
+alength(e):=?second(?arraydims(e));
+pxy(R):=points(part(first(R), 1), part(first(R), 2));
+labs(A):=if listp(A) then xreduce("+", maplist('abs, A)) else A;
+approx_equal(A, B):= block([prederror: true], is(labs(A-B)<%eps%));
+not_approx_equal(A, B):= is(not approx_equal(A, B));
+
+load("interpol");
+load("basic");
+
+nijk2rpz(nijk):= block([n: first(nijk), i: second(nijk), j: third(nijk), k: fourth(nijk)],
+  [part(rad_list, i), part(phi_list, n, j), part(z_list, k)]);
+
+rpz2xyz(rpz):=  block([r: first(rpz), p: second(rpz), z: third(rpz)],
+  float([r*cos(p/180*%pi), r*sin(p/180*%pi), z]));
+
+/*
+(%i1) get_chunks_borders([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3);
+(%o1)                               [3, 6]
+*/
+get_chunks_borders(lst, m):=makelist(quotient(length(lst), m)*n, n, m-1);
+
+/*
+Split a list into balanced chunks
+(%i1) split_in_chunks([10, 20, 30, 40, 50], 5);
+(%o1)                   [[10], [20], [30], [40], [50]]
+(%i2) split_in_chunks([10, 20, 30, 40, 50], 3);
+(%o2)                     [[10, 20, 30], [40], [50]]
+*/
+split_in_chunks(lst, m):= block([out: [], c: [], n: length(lst), sp, prederror: true],
+  if n<m then error("split_in_chunks: length(lst) < m"), 
+  sp: get_chunks_borders(lst, m),
+  for q thru n do (push(part(lst, n-q+1), c),
+    if member(q, sp) then (push(c, out), c: [])),
+  if not emptyp(c) then push(c, out),
+  out);
+
+/*
+(%i1) connect_chunks(split_in_chunks([10, 20, 30, 40], 2));
+(%o1)                      [[10, 20], [20, 30, 40]]
+*/
+connect_chunks(l):=block([out: [first(l)]],
+  for idx: 2 thru length(l) do block([lel: last(part(l, idx-1)), newl],
+    newl: cons(lel, part(l, idx)),
+    out: endcons(newl, out)),
+  out);
+     
+/*
+returns a list of first differences
+lst[2] - lst[1], ... , lst[n] - lst[n-1]
+*/
+fdiff(lst):= block([out: []], for q thru length(lst)-1 do out: cons(part(lst, q+1) - part(lst, q), out), reverse(out));
+
+/*
+(%i1) idx_after([1, 2, 3, 4], 2.5);
+(%o1)                                  3
+(%i2) idx_after([1, 2, 3, 4], 4.5);
+(%o2)                                 end
+*/
+idx_after(lst, pos):= block([eps: 1e-20],
+  if not listp(lst) then error("first argument of `idx_after' must be a list"),
+  if listp(first(lst)) then error("first argument of 'idx_after' must be a flat list"),
+  catch(for q thru length(lst) do if part(lst, q)>pos-eps then throw(q), 'end));
+
+/*
+(%i1) idx_after_nested([[1, 2, 3, 4], [5, 6, 7]], 2.5);
+(%o1)                               [1, 3]
+(%i2) idx_after_nested([[1, 2, 3, 4], [5, 6, 7]], 6.5);
+(%o2)                               [2, 3]
+*/
+idx_after_nested(lst, pos):= block([idx],
+  if not listp(lst) then error("first argument of `idx_after_nested' must be a list"),
+  if not every('listp, lst) then error("first argument of `idx_after_nested' must be a nested list"),
+  catch(for n thru length(lst) do if (idx: idx_after(part(lst, n), pos))#'end then throw([n, idx]), 'end));
+
+
+/*
+(%i1) maplist_in_index_interval(f, [10, 20, 30, 40, 50], 2, 3);
+(%o1)                     [10, f(20), f(30), 40, 50]
+*/
+maplist_in_index_interval(f, lst, imin, imax)::= buildq([f, imin, imax, lst],
+  block([out: [], prederror: true],
+    for q thru length(lst) do push(if q>=imin and q<=imax then f(part(lst, q)) else part(lst, q), out),
+    reverse(out)));
+
+/*
+places a cell center at `center' by re-scale of the grid in the interval [pmin, pmax]
+(%i52) fit_center([1, 2, 3, 4], 2+1/4, 1.5, 3.5);
+                                     9  13
+(%o52)                           [1, -, --, 4]
+                                     4  4
+*/
+fit_center(l, center, pmin, pmax):= block([lst: copylist(l), imin, imax, ia, ib, xa, xb, del, fun],
+  imin  : idx_after(lst, pmin) - 1,
+  imax  : idx_after(lst, pmax),
+  ia    : idx_after(lst, center),
+  ib    : ia  - 1,
+  xa    : part(lst, ia),
+  xb    : part(lst, ib),
+  del   : xa - xb,
+  fun   : change_scale(part(lst, imin), xb, part(lst, imin), center ),
+  lst   : maplist_in_index_interval(fun, lst, imin, ib),
+  fun   : change_scale(xa, part(lst, imax), center + del, part(lst, imax)),
+  lst   : maplist_in_index_interval(fun, lst, ia,   imax),
+  lst);
+
+/*
+returns a spline with zero derivatives at the ends
+plot2d(build_spline(1, 1, 2, 2)(x), [x, 1, 2]);
+*/
+build_spline(x1, y1, x2, y2):= block([p, x],
+  p:[[x1,y1], [x1+1/3*(x2-x1), y1+2/10*(y2-y1)], [x1+2/3*(x2-x1),y1+8/10*(y2-y1)], [x2,y2]],
+  subst(body=cspline(p,'d1=0,'dn=0), lambda([x], body)));
+
+/*
+
+replaces 'join by spline interpolations in the list
+spl: replace_join( [[0, 1, 0.1], 'join, [2, 3, 0.2]] );
+load("draw");
+draw2d(point_size=4, points(spline2xdx(spl)));
+
+*/
+replace_join(lst):= block([out: []],
+  for q thru length(lst) do
+  if part(lst, q)='join then block([prv: part(lst, q-1), nxt: part(lst, q+1)],
+    out: endcons([second(prv), first(nxt), build_spline(second(prv), third(prv), first(nxt), third(nxt))], out))
+  else out: endcons(part(lst, q), out),
+  out);
+
+/* return a function which does a linear re-scaling
+x1 -> y1
+x2 -> y2
+i(%i3) change_scale(0, 1, 100, 200)(0.5);
+(%o3)                                150.0
+*/
+change_scale(x1, x2, y1, y2)::=buildq([body: (x - x1)/(x2-x1)*(y2-y1) + y1], lambda([x], body));
+
+/* find a function in spline strucutre */
+find_f(x, spl):= block([prederror: true], catch(for lst in spl do if x>=first(lst) and x<second(lst)
+    then throw(third(lst)), 'end));
+
+delta_g(x, spl):= block([prederror: true], block([f: find_f(x, spl)],
+    if f='end then 'end
+    else if numberp(float(f)) then f
+    else f(x)));
+
+min_spline(spl):= first(first(spl));
+max_spline(spl):= second(last(spl));
+
+/*
+spl: [ [0, 1, 1/5 ] ] $
+spline2points(spl);
+spl: [ [0, 1, 1/5 ], [1, 2, lambda([x], 1/5 + (x - 1))] ] $
+spline2points(spl);
+*/
+spline2points(spl, [opt]):= block([f: min_spline(spl), f_list: [], df, prederror: true, x],
+  while (df: delta_g(f, spl))#'end do (
+    if df<=0 then error(printf(false, "grid step is <= 0 for f: ~e", f)),
+    f_list: endcons(f, f_list),
+    f: f + df),
+  if emptyp(opt) then maplist(change_scale(lmin(f_list), lmax(f_list), min_spline(spl), max_spline(spl)), f_list)
+  else f_list);
+
+/* use to plot a graphical of a spline object
+draw2d(points(spline2xdx(radspl)));
+*/
+spline2xdx(spl):= block([x: spline2points(spl)],
+  maplist("[", rest(x, -1), fdiff(x)));
+
+/*
+array(a, float, 2);
+fillarray(a, [1, 2, 3]);
+lincombarray(a, -1, 0);
+*/
+lincombarray(A, al, be):= block([],
+  local(nA),
+  nA: make_array(flonum, alength(A)),
+  for i: 0 thru alength(A)-1 do nA[i]: al*A[i]+be,
+  print(nA[0]),
+  nA);
+    
+
+

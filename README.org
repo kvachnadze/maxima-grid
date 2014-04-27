@@ -1,0 +1,6 @@
+* Introduction
+Grid generation with CAS maxima
+
+* Usage
+  [[splitter-with-circle.mac]] :: an example of grid generation
+
