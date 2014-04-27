@@ -91,17 +91,17 @@ b5_list : spline2points(b5spline)$
 /* draw2d(point_size=3, points_joined=true, points(spline2xdx(b5spline)))$ */
 /* draw2d(points(spline2xdx(b5spline)))$ */
 
-R1a: output_block(B1a, phi_list, rad_list)$
-R1b: output_block(B1b, phi_list, rad_list, [true, false, false])$
+R1a: output_block(B1a, phi_list, rad_list, [false, false, true])$
+R1b: output_block(B1b, phi_list, rad_list, [true, false, true])$
 
 /* R1b: block([R: first(R1a)], [[first(R), lincombarray(second(R), -1, 0), third(R)], second(R1a)])$ */
 
-R2: output_block(B2, reverse(b2_list), rad_list)$
-R3: output_block(B3, reverse(b2_list), rad_list, [true, false, false])$
+R2: output_block(B2, reverse(b2_list), rad_list, [false, false, true])$
+R3: output_block(B3, reverse(b2_list), rad_list, [true, false, true])$
 
-R4: output_block(B4, reverse(b4_list), reverse(rad_list), [true, true, false])$
-R5: output_block(B5, reverse(b4_list), b5_list)$ 
-R6: output_block(B6, reverse(b4_list), rad_list)$ 
+R4: output_block(B4, reverse(b4_list), reverse(rad_list), [true, true, true])$
+R5: output_block(B5, reverse(b4_list), b5_list, [false, false, true])$
+R6: output_block(B6, reverse(b4_list), rad_list, [false, false, true])$
 
 load("write-list-lowlevel.lisp");
 /*
