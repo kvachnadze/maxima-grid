@@ -125,7 +125,7 @@ x2 -> y2
 (%i3) change_scale(0, 1, 100, 200)(0.5);
 (%o3)                                150.0
 */
-change_scale(x1, x2, y1, y2)::=buildq([body: (x - x1)/(x2-x1)*(y2-y1) + y1], lambda([x], body));
+change_scale(x1, x2, y1, y2)::=block([x], buildq([body: (x - x1)/(x2-x1)*(y2-y1) + y1], lambda([x], body)));
 
 define_variable(phiscale, 4, any);
 phispl: [
