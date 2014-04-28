@@ -134,7 +134,7 @@ x2 -> y2
 i(%i3) change_scale(0, 1, 100, 200)(0.5);
 (%o3)                                150.0
 */
-change_scale(x1, x2, y1, y2)::=buildq([body: (x - x1)/(x2-x1)*(y2-y1) + y1], lambda([x], body));
+change_scale(x1, x2, y1, y2)::=block([x], buildq([body: (x - x1)/(x2-x1)*(y2-y1) + y1], lambda([x], body)));
 
 /* find a function in spline strucutre */
 find_f(x, spl):= block([prederror: true], catch(for lst in spl do if x>=first(lst) and x<second(lst)
@@ -154,7 +154,7 @@ spline2points(spl);
 spl: [ [0, 1, 1/5 ], [1, 2, lambda([x], 1/5 + (x - 1))] ] $
 spline2points(spl);
 */
-spline2points(spl, [opt]):= block([f: min_spline(spl), f_list: [], df, prederror: true, x],
+spline2points(spl, [opt]):= block([f: min_spline(spl), f_list: [], df, prederror: true],
   while (df: delta_g(f, spl))#'end do (
     if df<=0 then error(printf(false, "grid step is <= 0 for f: ~e", f)),
     f_list: endcons(f, f_list),
