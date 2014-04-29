@@ -2,6 +2,7 @@
 
 alength(e):=?second(?arraydims(e));
 pxy(R):=points(part(first(R), 1), part(first(R), 2));
+vabs(A):= block([s: 0], for el in A do s: s + el^2, sqrt(s));
 labs(A):=if listp(A) then xreduce("+", maplist('abs, A)) else A;
 approx_equal(A, B):= block([prederror: true], is(labs(A-B)<%eps%));
 not_approx_equal(A, B):= is(not approx_equal(A, B));

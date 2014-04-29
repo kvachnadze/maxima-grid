@@ -10,6 +10,8 @@ http://en.wikipedia.org/wiki/Transfinite_interpolation
 %y%(s):=ay*s + by;
 %so%: first(solve([%x%(0)=x1, %y%(0)=y1, %x%(1)=x2,  %y%(1)=y2], [ax, bx, ay, by]));
 
+element_length(c):= ();
+
 /* create parameteric line from [x1, y1] to [x2, y2]
 p: create_line(0, 0, 1, 2);
 draw2d(parametric( p(s)[1], p(s)[2], s, 0, 1));
@@ -71,10 +73,130 @@ n2ijk(n      , nx, ny, nz):= block([i, j, k],
 
 block2n(R):=second(R);
 block2array(R):=first(R);
-blockijk2xyz(R, i, j, k):= block([nlist: block2n(R), nidx,  B],
+
+blockijk2xyz([l]):=apply('blockijk2xyz_aux, cons(first(l), flatten(rest(l))));
+blockijk2xyz_aux(R, i, j, k):= block([nlist: block2n(R), nidx,  B],
   nidx: apply('ijk2n, append([i, j, k], nlist)),
   B: block2array(R),
   maplist( lambda([D], arrayapply(D, [nidx])), B));
+
+/*
+(%i1) decodeijk(['end, 'half, 3], [10, 20, 30]);
+(%o1)                             [10, 10, 3]
+(%i2) 
+*/
+decodeijk(l, nlist):= block([out: [], el, nel],
+  for idx thru length(l) do
+  (el: part(l, idx),
+    if el='min or el='start then nel: 1
+    else if el='max or el='end then nel: part(nlist, idx)
+    else if el='half then nel: quotient(part(nlist, idx), 2)
+    else nel : el,
+    out: endcons(nel, out)),
+  out);
+
+block2coners(R):= block([nlist: block2n(R), l, lm, p],
+  l: [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]],
+  lm: fullmap( lambda([s], if s=1 then 'max else 'min), l),
+  p: maplist( lambda([q], decodeijk(q, nlist)), lm),
+  p: maplist( lambda([q], blockijk2xyz(R, q)),  p),
+  maplist("[", l, p));
+
+is_matching(p1, p2):= block([d: vabs(second(p1) - second(p2))], approx_equal(d, 0));
+
+/*
+(%o1) [[[1, 0, 0], [0, 0, 0]], [[1, 0, 1], [0, 0, 1]], [[1, 1, 0], [0, 1, 0]], 
+                                                        [[1, 1, 1], [0, 1, 1]]]
+*/
+matching_corners(C1, C2):= block([out: []],
+  for p1 in C1 do
+  for p2 in C2 do if is_matching(p1, p2) then
+  out: endcons([first(p1), first(p2)], out),
+  out);
+
+/*
+mc: [[[1,0,0],[0,0,0]],[[1,0,1],[0,0,1]],[[1,1,0],[0,1,0]],[[1,1,1],[0,1,1]]]$
+*/
+
+/*
+(%i1) allsame([1, 1]);
+(%o1)                                  1
+(%i2) allsame([1, 2]);
+(%o2)                              not_same
+*/
+allsame(l):= if not listp(l) or emptyp(l) then error("allsame argument must be a list with at least on element")
+else catch(block([s: first(l)],
+    for q in rest(l) do if q#s then throw('not_same), s));
+
+nth_in_list(l, n):= maplist( lambda([q], part(q, n)), l);
+mc2faces_aux(l):= catch(for nd thru 3 do block([aux: nth_in_list(l, nd), s],
+    s: allsame(aux),
+    if s#'not_same then throw([nd, s])),
+  error("cannot find an index same for all points"));
+
+idxp(q):= member(q, ['i, 'j, 'k]);
+matchdeclare([idx1, idx2], idxp);
+defmatch(find_idx, [[idx1, n1], [idx2, n2]], n1, n2);
+
+find_changing(A, B):= if second(first(A))#second(first(B)) then endcons(second(first(B)), first(A))
+else endcons(second(second(B)), second(A));
+
+mc2faces_and_directions(mc):= block([%fs1%, %fs2%, dir],
+  dir: mc2faces(mc),
+  append([%fs1%, %fs2%], dir));
+
+blocks2faces_and_directions(R1, R2):= block([co1, co2, mc],
+  co1: block2coners(R1),
+  co2: block2coners(R2),
+  mc : matching_corners(co1, co2),
+  if emptyp(mc) then return([]),
+  if length(mc)#4 then error("wrong number of matching points"),
+  mc2faces_and_directions(mc));
+
+mc2faces(mc):= block([fs, cons_dim, cd1, cd2, i1, i2, widx1, widx2, d1, d2,
+  pl1: maplist('first, mc),
+  pl2: maplist('second, mc)],
+  cd1: mc2faces_aux(pl1),
+  cd2: mc2faces_aux(pl2),
+  %fs1%: dimanddip2face(cd1),
+  %fs2%: dimanddip2face(cd2),
+  print(%fs1%),
+  widx1: append_dim_name_but(pl1, first(cd1)),
+  widx2: append_dim_name_but(pl2, first(cd2)),
+  i1: first(sublist_indices(widx1, lambda([q], find_idx(q, 0, 0)#false))),
+  i2: first(sublist_indices(widx1, lambda([q], find_idx(q, 1, 0)#false))),
+  d1: cons(part(widx1, i1, 1, 1), find_changing(part(widx2, i1), part(widx2, i2))),
+  i2: first(sublist_indices(widx1, lambda([q], find_idx(q, 0, 1)#false))),
+  d2: cons(part(widx1, i2, 2, 1), find_changing(part(widx2, i1), part(widx2, i2))),
+  [d1, d2]);
+
+remove_if_index(l, index):= block([out: []], for i thru length(l) do if i#index then out: cons(part(l, i), out), reverse(out));
+append_dim_name_but(pl, cd):= block([al: makelist(maplist("[", ['i, 'j, 'k], point), point, pl)],
+  maplist(lambda([q], remove_if_index(q, cd)), al));
+
+/* ndim: dimension code (1, 2, 3)
+   deep: 0 or 1
+*/
+dimanddip2face([l]):= apply('dimanddip2face_aux, flatten(l));
+dimanddip2face_aux(ndim, deep):=
+if      ndim=1 and deep=0 then 1
+else if ndim=1 and deep=1 then 2
+else if ndim=2 and deep=0 then 3
+else if ndim=2 and deep=1 then 4
+else if ndim=3 and deep=0 then 5
+else if ndim=3 and deep=1 then 6
+else error("wrong ndim or deep");
+
+block2facecenter(R, face):= block([nlist: block2n(R), code, decode],
+  code : if face=1 then ['min, 'half, 'half]
+  else if face=2 then ['max, 'half, 'half]
+  else if face=3 then ['half, 'min, 'half]
+  else if face=4 then ['half, 'max, 'half]
+  else if face=5 then ['half, 'half, 'min]
+  else if face=6 then ['half, 'half, 'max]
+  else error("face should be in range 1-6"),
+  decode: decodeijk(code, nlist),
+  blockijk2xyz(R, decode));
 
 vlenght(R):= sqrt(R.R);
 block2vector(B, ndim, len):= block([dR, R0: blockijk2xyz(B, 1, 1, 1)],

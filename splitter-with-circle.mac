@@ -108,12 +108,25 @@ load("write-list-lowlevel.lisp");
 load("~/src/maxima-code/share/contrib/gentran/gentran.lisp");
 gentran( for i: 1 thru 10 do print(i));
 */
-blist: [R1a, R1b, R2, R3, R4, R5, R6]$
+blist_sym: ['R1a, 'R1b, 'R2, 'R3, 'R4, 'R5, 'R6]$
+blist: map('ev, blist_sym)$
 vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
   rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$
 vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
   rest(v, -1)), block2vector(B, 2, 0.5)))), blist)$
 
+face: makelist(makelist(label(cons( sconcat(f, "_{", R, "}"), rest(block2facecenter(ev(R), f), -1))), f, [1, 2, 3, 4]),
+  R, [last(blist_sym), second(blist_sym)])$
+
+draw2d(xrange=[-rmax, 1.1*H], yrange=[-rmax, H],
+  font      = "Arial",
+  font_size =  20,
+  point_type = 7,
+  color='red,   pxy(R3),
+  color='magenta,   pxy(R5),
+  line_width = 3,
+  head_length = 0.1, color='black, vlistx, color='red, vlisty, face);
+ 
 load("draw");
 draw2d(xrange=[-rmax, 1.1*H], yrange=[-rmax, H],
   point_type = 7,
@@ -124,10 +137,10 @@ draw2d(xrange=[-rmax, 1.1*H], yrange=[-rmax, H],
   color='orange, pxy(R4),
   color='magenta, pxy(R5),
   color='violet, pxy(R6),
+  face,
   line_width = 3,
   head_length = 0.1, color='black, vlistx, color='red, vlisty);
 
-/* blist: [R1a, R1b]$ */
 o: openw("g.fmt");
 nblock: length(blist);
 printf(o, "~d~%", nblock);
