@@ -1,14 +1,21 @@
-%eps%: 1e-10;
+load("interpol");
+load("basic");
+
+write_spline_list(lst, fname):= block([flst: float(lst), out],
+  if not every('numberp, flst) then error("all elements of `lst' shoud be atoms") else 
+  out : maplist("[", rest(flst, -1), fdiff(flst)),
+  with_stdout(fname,
+    for el in out do printf(true, "~{~17,8e~}~%", el)));
 
 alength(e):=?second(?arraydims(e));
 pxy(R):=points(part(first(R), 1), part(first(R), 2));
 vabs(A):= block([s: 0], for el in A do s: s + el^2, sqrt(s));
 labs(A):=if listp(A) then xreduce("+", maplist('abs, A)) else A;
+
+%eps%: 1e-10;
 approx_equal(A, B):= block([prederror: true], is(labs(A-B)<%eps%));
 not_approx_equal(A, B):= is(not approx_equal(A, B));
 
-load("interpol");
-load("basic");
 
 nijk2rpz(nijk):= block([n: first(nijk), i: second(nijk), j: third(nijk), k: fourth(nijk)],
   [part(rad_list, i), part(phi_list, n, j), part(z_list, k)]);

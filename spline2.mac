@@ -10,7 +10,7 @@ http://en.wikipedia.org/wiki/Transfinite_interpolation
 %y%(s):=ay*s + by;
 %so%: first(solve([%x%(0)=x1, %y%(0)=y1, %x%(1)=x2,  %y%(1)=y2], [ax, bx, ay, by]));
 
-element_length(c):= ();
+element_length(c):= error("not impl.");
 
 /* create parameteric line from [x1, y1] to [x2, y2]
 p: create_line(0, 0, 1, 2);
@@ -150,7 +150,7 @@ blocks2faces_and_directions(R1, R2):= block([co1, co2, mc],
   co2: block2coners(R2),
   mc : matching_corners(co1, co2),
   if emptyp(mc) then return([]),
-  if length(mc)#4 then error("wrong number of matching points"),
+  if length(mc)#4 then return([]),
   mc2faces_and_directions(mc));
 
 mc2faces(mc):= block([fs, cons_dim, cd1, cd2, i1, i2, widx1, widx2, d1, d2,
@@ -174,7 +174,8 @@ remove_if_index(l, index):= block([out: []], for i thru length(l) do if i#index 
 append_dim_name_but(pl, cd):= block([al: makelist(maplist("[", ['i, 'j, 'k], point), point, pl)],
   maplist(lambda([q], remove_if_index(q, cd)), al));
 
-/* ndim: dimension code (1, 2, 3)
+/*
+   ndim: dimension code (1, 2, 3)
    deep: 0 or 1
 */
 dimanddip2face([l]):= apply('dimanddip2face_aux, flatten(l));
@@ -251,7 +252,7 @@ output_block(B, c1lst, c2lst, [rev]):=block([lst1, lst2, lst3, u, v, q, nu, nv, 
     block([u: lst1[i-1], v: lst2[j-1], q: lst3[k-1]],
       Rx[idx]: float(Bx(u, v, q)), Ry[idx]: float(By(u, v, q)), Rz[idx]: float(Bz(u, v, q)))))),
   remarray(lst1, lst2, lst3),
-  [[Rx, Ry, Rz], [nu, nv, nq]]);
+   [[Rx, Ry, Rz], [nu, nv, nq]]);
 
 /*
 P[1,4]: [0, 0];
@@ -272,9 +273,7 @@ R: first(output_block(G, 0 .. 30, 0 .. 30))$
 load("draw");
 draw2d( point_size=3, points(first(R), second(R)) )$
 
-*/
 
-/*
 draw2d(xrange=[-2, 2], yrange=[-2, 2], point_size=3, points(R));
 
 c1lst: 0 .. 11;

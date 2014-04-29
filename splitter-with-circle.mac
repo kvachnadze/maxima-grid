@@ -2,9 +2,9 @@ kill(all);
 load("draw");
 load("numericalio");
 load("write-list-lowlevel.lisp");
+load("spline2.mac");
 load("line_and_circle.mac");
 
-load("spline2.mac");
 load("integer_sequence");
 rmin: 0.2;
 rmax: 3.0;
@@ -43,6 +43,8 @@ phispl: [
 [200   , phimax, 2.6*phiscale]];
 phispl: replace_join(phispl)$
 phi_list: spline2points(phispl)$
+write_spline_list(phi_list, "dphi.dat");
+
 /* draw2d(point_size=3, points_joined=true, points(spline2xdx(phispl))); */
 
 rscale: 5;
@@ -54,6 +56,7 @@ radspl: [
 [15.0*dmin, rmax, build_spline(15*dmin, 0.13*rscale*dmin, rmax, 0.9*rscale*dmin)] ]$
 radspl: replace_join(radspl)$
 rad_list : spline2points(radspl)$
+write_spline_list(rad_list, "drad.dat");
 /* draw2d(point_size=3, points_joined=true, points(spline2xdx(radspl))); */
 
 Lp: h2 + rmin*%pi/2;
@@ -67,6 +70,7 @@ b2spline: [
 ];
 b2spline: replace_join(b2spline)$
 b2_list : spline2points(b2spline)$
+write_spline_list(b2_list, "db2.dat");
 /* draw2d(point_size=3, points_joined=true, points(spline2xdx(b2spline)))$ */
 
 from_b2: last(b2_list) - last(rest(b2_list, -1))$
@@ -88,6 +92,7 @@ b5spline: [
 ];
 b5spline: replace_join(b5spline)$
 b5_list : spline2points(b5spline)$
+write_spline_list(b5_list, "db5.dat");
 /* draw2d(point_size=3, points_joined=true, points(spline2xdx(b5spline)))$ */
 /* draw2d(points(spline2xdx(b5spline)))$ */
 
@@ -110,22 +115,16 @@ gentran( for i: 1 thru 10 do print(i));
 */
 blist_sym: ['R1a, 'R1b, 'R2, 'R3, 'R4, 'R5, 'R6]$
 blist: map('ev, blist_sym)$
+
 vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
   rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$
 vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
   rest(v, -1)), block2vector(B, 2, 0.5)))), blist)$
 
+/*
 face: makelist(makelist(label(cons( sconcat(f, "_{", R, "}"), rest(block2facecenter(ev(R), f), -1))), f, [1, 2, 3, 4]),
   R, [last(blist_sym), second(blist_sym)])$
-
-draw2d(xrange=[-rmax, 1.1*H], yrange=[-rmax, H],
-  font      = "Arial",
-  font_size =  20,
-  point_type = 7,
-  color='red,   pxy(R3),
-  color='magenta,   pxy(R5),
-  line_width = 3,
-  head_length = 0.1, color='black, vlistx, color='red, vlisty, face);
+*/
  
 load("draw");
 draw2d(xrange=[-rmax, 1.1*H], yrange=[-rmax, H],
@@ -137,7 +136,6 @@ draw2d(xrange=[-rmax, 1.1*H], yrange=[-rmax, H],
   color='orange, pxy(R4),
   color='magenta, pxy(R5),
   color='violet, pxy(R6),
-  face,
   line_width = 3,
   head_length = 0.1, color='black, vlistx, color='red, vlisty);
 
@@ -152,3 +150,8 @@ for bindx thru length(blist) do block([bl: part(blist, bindx)],
   write_data(third(block2array(bl)), o),
   if bindx#length(blist) then newline(o));
 close(o);
+
+for el1 in blist do
+for el2 in blist do block(
+  c: blocks2faces_and_directions(el1, el2),
+  if not emptyp(c) then print(c));

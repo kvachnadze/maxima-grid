@@ -1,4 +1,3 @@
-load("spline2.mac");
 line_and_circle(rmin, rmax, h, alpha):= block([p1, p2, p3, p4, ca, cb, c1, c2, c3, c4],
   p1: [h, rmin],
   p2: [0  , rmin],
