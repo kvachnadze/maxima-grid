@@ -7,8 +7,18 @@ write_spline_list(lst, fname):= block([flst: float(lst), out],
   with_stdout(fname,
     for el in out do printf(true, "~{~17,8e~}~%", el)));
 
+/* returns a length of one dimensional lisp array
+   see
+   (%i1) describe(make_array);
+*/
 alength(e):=?second(?arraydims(e));
 pxy(R):=points(part(first(R), 1), part(first(R), 2));
+
+/* a sum of squares for a list
+(%i1) vabs([a, b, c]);
+                                    2    2    2
+(%o1)                         sqrt(c  + b  + a )
+*/
 vabs(A):= block([s: 0], for el in A do s: s + el^2, sqrt(s));
 labs(A):=if listp(A) then xreduce("+", maplist('abs, A)) else A;
 
