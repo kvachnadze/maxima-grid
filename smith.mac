@@ -24,9 +24,37 @@ t -> u
 F(s, t);
 
 /* projection */
-fa(f, [l])::= buildq([f, l], funmake(f, l));
-Ps(f)::= buildq([body: (1-'s/'h)*fa(f, 0, 't) + ('s/'h)*fa(f, 'h, 't)], lambda([s, t], body));
-Pt(f)::= buildq([body: (1-'t/'h)*fa(f, 's, 0) + ('t/'h)*fa(f, 's, 'h)], lambda([s, t], body));
+/* fa(f, [l])::= buildq([f, l], apply(f, l)); */
+Ps(f):= buildq([body: (1-'s/'h)*f(0, 't) + ('s/'h)*f('h, 't)], lambda([s, t], body));
+Pt(f):= buildq([body: (1-'t/'h)*f('s, 0) + ('t/'h)*f('s, 'h)], lambda([s, t], body));
+
+product_condition(P, cond, i, i0, i1)::=buildq([P, cond, i, i0, i1],
+  product(if cond then P else 1, i, i0, i1));
+
+/* f, l, */
+
+replace_list_by_element(F, arg)::= buildq([F,
+  rarg: maplist( lambda([el], if listp(el) then arraymake('ll, ['i]) else el), arg)],
+  F(splice(rarg)));
+
+not_listp(e):=not listp(e);
+bi_projection(F, arg)::=
+buildq([F, arg],
+  block([m, ll, ss],
+    local(ll),
+    ll: part(sublist(arg, listp), 1),
+    ss: part(sublist(arg, not_listp), 1),
+    m: length(ll),
+    sum(
+      replace_list_by_element(F, arg)*product_condition(ss - ll[j], i#j, j, 1, m)/
+      product_condition(ll[i] - ll[j], i#j, j, 1, m),
+      i, 1, m)));
+
+bi_projection(F, ['t, [0, h/2, h]]);
+bi_projection(F, [[0, h/2, h], 's]);
+
+aux: Ps(F)(s, t) + Pt(F)(s, t) - Ps(Pt(F))(s, t);
+expand(aux - expr);
 
 expr_ref:     (1-v)*c1(u)+v*c3(u)+(1-u)*c2(v)+u*c4(v)-
     ((1-u)*(1-v)*c1(0)+u*v*c3(1)+u*(1-v)*c4(0)+(1-u)*v*c3(0))$
