@@ -1,0 +1,65 @@
+load("spline2.mac");
+load("smith.mac");
+load("integer_sequence");
+load("line_and_circle.mac");
+
+rmin: 0.2;
+
+rmax: 3.0;
+L   : 5.5;
+H   : 8.5;
+
+h2  : L/2;
+phiscale: 5;
+phimax:  h2*90 / (%pi*rmin/2)  + 90;
+phispl: [
+[0    , 15    , 2.6*phiscale],
+'join,
+[60   , 120    , 1.1983*phiscale],
+'join,
+[200   , phimax, 2.6*phiscale]];
+phispl: replace_join(phispl)$
+phi_list: spline2points(phispl)$
+write_spline_list(phi_list, "dphi.dat");
+
+/* draw2d(point_size=3, points_joined=true, points(spline2xdx(phispl))); */
+
+rscale: 5;
+dmin  : 2*rmin;
+radspl: [
+[ rmin,  0.6*dmin, 0.01*rscale*dmin],
+'join,
+[ 5.0*dmin, 15.0*dmin, 0.13*rscale*dmin],
+[15.0*dmin, rmax, build_spline(15*dmin, 0.13*rscale*dmin, rmax, 0.9*rscale*dmin)] ]$
+radspl: replace_join(radspl)$
+rad_list : spline2points(radspl)$
+write_spline_list(rad_list, "drad.dat");
+
+
+[c1, c2, c3, c4]: line_and_circle(rmin, rmax, h2, 180);
+
+q:  99/100;
+rint: q*rmin+(1-q)*rmax;
+k: rint/rmin;
+
+[c1extra, c2aux, c3aux, c4aux]: line_and_circle(rint, rmax, h2, 180, 1/k);
+
+l: [[[0, 1], [c2, c4]],
+    [[0, 1-q, 1], [c1, c1extra, c3]]];
+B1new: gordon2(l);
+
+l: [[[0, 1], [c2, c4]],
+    [[0, 1], [c1, c3]]];
+B1a: gordon2(l);
+
+numer: true;
+R1a:   output_block(B1a, phi_list, rad_list, [false, false, true])$
+R1new: output_block(B1new, phi_list, rad_list, [false, false, true])$
+
+load("draw");
+pxy(R)::=buildq([R], points(first(first(R)), second(first(R))));
+
+/* draw2d( point_size=1, pxy(R1), point_type    = circle, color='red, pxy(R2))$ */
+p: block([u: map('c1extra, list_to_zero_one(phi_list))], points(map('first, u), map('second, u)))$
+
+draw2d( point_size=1, color='red, pxy(R1new), point_type=circle, p);

@@ -1,4 +1,5 @@
-line_and_circle(rmin, rmax, h, alpha):= block([p1, p2, p3, p4, ca, cb, c1, c2, c3, c4],
+line_and_circle(rmin, rmax, h, alpha, [kin]):= block([p1, p2, p3, p4, ca, cb, c1, c2, c3, c4, k],
+  if emptyp(kin) then k: 1.0 else k: first(kin),
   p1: [h, rmin],
   p2: [0  , rmin],
   p3: [rmin*cos(alpha/180*%pi), rmin*sin(alpha/180*%pi)],
@@ -6,7 +7,7 @@ line_and_circle(rmin, rmax, h, alpha):= block([p1, p2, p3, p4, ca, cb, c1, c2, c
   
   ca : create_line(p1, p2),
   cb : create_arc([0, 0], rmin, 90, alpha),
-  c1: join_elements(ca, first(p1-p2),  cb,  rmin*(alpha-90)/180*%pi),
+  c1: join_elements(ca, first(p1-p2),  cb,  rmin*(alpha-90)/180*%pi        * k),
   
   p1: [h, rmax],
   p2: [0  , rmax],

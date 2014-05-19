@@ -26,37 +26,6 @@ op_projector(F, arg)::= buildq([F, arg],
   block([body: op_projector_aux(F, arg)],
     buildq([%op_proj_vars%, body], lambda([splice(%op_proj_vars%)], body))));
 
-/*
-expr_ref:     (1-v)*c1(u)+v*c3(u)+(1-u)*c2(v)+u*c4(v)-
-    ((1-u)*(1-v)*c1(0)+u*v*c3(1)+u*(1-v)*c4(0)+(1-u)*v*c3(0))$
-
-expr: (1-s/h)*F(0,t) + (s/h)*F(h, t)
-+ (1-t/h)*F(s,0) + (t/h)*F(s, h)
-- (1-s/h)*(1-t/h)*F(0,0) - (1-s/h)*(t/h)*F(0,h)
-- (1-t/h)*(s/h)*F(h,0) - (t/h)*(s/h)*F(h,h);
-*/
-
-/*
-load("simplifying.lisp");
-simp_F(s, t):=
-     if s=0  and t=0  then c1(0)
-else if s=0  and t='h then c4(0)
-else if s='h and t=0 then  c3(0)
-else if s='h and t='h then c3(h)
-else if s=0 then c1(t)
-else if s='h then c3(t)
-else if t=0 then  c2(s)
-else if t='h then c4(s)
-else simpfuncall('F, s, t);
-simplifying('F,'simp_F)$
-*/
-
-/*
-expr: subst([h=1, s=v, t=u], expr);
-fullratsimp(expr_ref - expr);
-expr: subst([h=1, s=v, t=u], aux2);
-*/
-
 load("ctensor");
 one_arg_to_all(v, idx):= block([out: copylist(%op_proj_vars%)], local(out), out[idx]: v, out);
 pair_for_subst(a, b, idx):= funmake('F, one_arg_to_all(a, idx)) = funmake(b, deleten(%op_proj_vars%, idx));
@@ -74,22 +43,41 @@ subst_with_rule(res, e):= (
     kill(%r1%)),
   e);
 
-gordon2(l)::= buildq([p1:  part(l, 1, 1), p2: part(l, 2, 1)],
-  block([e: op_projector(F, ['s, p1])(s, t) + op_projector(F, [p2, 't])(s, t) -
-  op_projector(op_projector(F, ['s, p1]),  [p2, 't])(s, t),
-  s_list: vars_to_substlist(l)],
-  buildq([body: subst_with_rule(s_list, e)], lambda([splice(%op_proj_vars%)], body))));
+gordon2_macro(l)::= 
+  buildq([p1:  part(l, 1, 1), p2: part(l, 2, 1)],
+    block([listarith: false, e, s_list],
+      e: op_projector(F, [p1, 't])(s, t) + op_projector(F, ['s, p2])(s, t) -
+      op_projector(op_projector(F, [p1, 't]),  ['s, p2])(s, t),
+      s_list: vars_to_substlist(l),
+      buildq([body: subst_with_rule(s_list, e), %op_proj_vars%], lambda([splice(%op_proj_vars%)], body))));
 
 l: [[[0, 'h/2, 'h], [f1, f2, f3]],
-[[0, 'h/2, 'h], [g1, g2, g3]]];
+[[0, 'h], [g1, g3]]];
 
-apply('gordon2, [l]);
+gordon2(l):= apply(gordon2_macro, [l]);
 
 
-l: [[[0, 'h], [c1, c3]],
+/*
+l: [[[0, 1], [c2, c4]],
+    [[0, 1], [c1, c3]]];
+    
+l2: [[[0, 1], [g2, g4]],
+[[0, 1], [g1, g3]]];
+
+expand(gordon2(l)(s, t));
+
+l: [[[0, 1], [g2, g4]],
+    [[0, 1], [g1, g3]]];
+gordon2(l);
+gordon(g1, g2, g3, g4);
+
+l: [[[0, 'h/2, 'h], [c1, c5, c3]],
     [[0, 'h], [c2, c4]]];
 
 expr: apply('gordon2, [l]);
+
 expr: subst([h=1, s=v, t=u], expr);
 
-fullratsimp(expr - expr_ref);
+res: expand(expr(u, v) - expr_ref);
+subst([c1(0)=c2(0), c4(1)=c3(1), c2(1)=c3(0)], res);
+*/

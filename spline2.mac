@@ -215,6 +215,7 @@ create_rhs_output(fname, fbody)::= block([body: optimize(fbody)], buildq([body, 
       body)));
 
 ijk2n_rev(i, j, k, nx, ny, nz):=block([prederror: true],
+  if not every('numberp, [i, j, k, nx, ny, nz]) then error("ijk2n_rev: all arguments should be numbers"),
   if %revx% then i: nx - i + 1,
   if %revy% then j: ny - j + 1,
   if %revz% then k: nz - k + 1,
@@ -243,7 +244,7 @@ output_block(B, c1lst, c2lst, [rev]):=block([lst1, lst2, lst3, u, v, q, nu, nv, 
   nu: length(c1lst),
   nv: length(c2lst),
   nq: length(c3lst),
-  ?meval(buildq([idx: ijk2n_rev(i,j,k, nu, nv, nq),
+  ?meval(buildq([idx: funmake('ijk2n_rev, ['i,'j,'k, nu, nv, nq]),
       n: nu*nv*nq],
     (Rx: make_array(flonum, n), Ry: make_array(flonum, n), Rz: make_array(flonum, n),
     for i: 1 thru nu do
