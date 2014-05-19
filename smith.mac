@@ -1,61 +1,32 @@
-/*
-
-0<= xi <= 1
-0<= et <= 1
-0<= dz <= 1
-
-*/
-
-/*
-gordon1973.pdf, eq (17)
-*/
-
-/*
-map [0, h]x[0, h]
-
-*/
-
-/*
-h -> 1;
-s -> v
-t -> u
-*/
-
-F(s, t);
-
-/* projection */
-/* fa(f, [l])::= buildq([f, l], apply(f, l)); */
-Ps(f):= buildq([body: (1-'s/'h)*f(0, 't) + ('s/'h)*f('h, 't)], lambda([s, t], body));
-Pt(f):= buildq([body: (1-'t/'h)*f('s, 0) + ('t/'h)*f('s, 'h)], lambda([s, t], body));
+%op_proj_vars%: ['s, 't];
 
 product_condition(P, cond, i, i0, i1)::=buildq([P, cond, i, i0, i1],
   product(if cond then P else 1, i, i0, i1));
-
-/* f, l, */
 
 replace_list_by_element(F, arg)::= buildq([F,
   rarg: maplist( lambda([el], if listp(el) then arraymake('ll, ['i]) else el), arg)],
   F(splice(rarg)));
 
 not_listp(e):=not listp(e);
-bi_projection(F, arg)::=
+op_projector_aux(F, arg)::=
 buildq([F, arg],
   block([m, ll, ss],
     local(ll),
     ll: part(sublist(arg, listp), 1),
-    ss: part(sublist(arg, not_listp), 1),
+    ss: catch(for i thru length(arg) do
+      if listp(part(arg, i)) then throw(part(%op_proj_vars%, i)),
+      error("one element of `arg' should be a list")),
     m: length(ll),
     sum(
       replace_list_by_element(F, arg)*product_condition(ss - ll[j], i#j, j, 1, m)/
       product_condition(ll[i] - ll[j], i#j, j, 1, m),
       i, 1, m)));
 
-bi_projection(F, ['t, [0, h/2, h]]);
-bi_projection(F, [[0, h/2, h], 's]);
+op_projector(F, arg)::= buildq([F, arg],
+  block([body: op_projector_aux(F, arg)],
+    buildq([%op_proj_vars%, body], lambda([splice(%op_proj_vars%)], body))));
 
-aux: Ps(F)(s, t) + Pt(F)(s, t) - Ps(Pt(F))(s, t);
-expand(aux - expr);
-
+/*
 expr_ref:     (1-v)*c1(u)+v*c3(u)+(1-u)*c2(v)+u*c4(v)-
     ((1-u)*(1-v)*c1(0)+u*v*c3(1)+u*(1-v)*c4(0)+(1-u)*v*c3(0))$
 
@@ -63,7 +34,9 @@ expr: (1-s/h)*F(0,t) + (s/h)*F(h, t)
 + (1-t/h)*F(s,0) + (t/h)*F(s, h)
 - (1-s/h)*(1-t/h)*F(0,0) - (1-s/h)*(t/h)*F(0,h)
 - (1-t/h)*(s/h)*F(h,0) - (t/h)*(s/h)*F(h,h);
-    
+*/
+
+/*
 load("simplifying.lisp");
 simp_F(s, t):=
      if s=0  and t=0  then c1(0)
@@ -75,10 +48,48 @@ else if s='h then c3(t)
 else if t=0 then  c2(s)
 else if t='h then c4(s)
 else simpfuncall('F, s, t);
-
 simplifying('F,'simp_F)$
+*/
+
+/*
+expr: subst([h=1, s=v, t=u], expr);
+fullratsimp(expr_ref - expr);
+expr: subst([h=1, s=v, t=u], aux2);
+*/
+
+load("ctensor");
+one_arg_to_all(v, idx):= block([out: copylist(%op_proj_vars%)], local(out), out[idx]: v, out);
+pair_for_subst(a, b, idx):= funmake('F, one_arg_to_all(a, idx)) = funmake(b, deleten(%op_proj_vars%, idx));
+
+vars_to_substlist(l):= block([res: []],
+  for i thru length(l) do
+  res: append(res, maplist(lambda([a, b], pair_for_subst(a, b, i)), part(l, i, 1), part(l, i, 2))),
+  res);
+
+matchdeclare(t, all);
+matchdeclare(s, all);
+subst_with_rule(res, e):= (
+  for su in res do  (apply('defrule, [%r1%, lhs(su), rhs(su)]),
+    e: apply1(e, %r1%),
+    kill(%r1%)),
+  e);
+
+gordon2(l)::= buildq([p1:  part(l, 1, 1), p2: part(l, 2, 1)],
+  block([e: op_projector(F, ['s, p1])(s, t) + op_projector(F, [p2, 't])(s, t) -
+  op_projector(op_projector(F, ['s, p1]),  [p2, 't])(s, t),
+  s_list: vars_to_substlist(l)],
+  buildq([body: subst_with_rule(s_list, e)], lambda([splice(%op_proj_vars%)], body))));
+
+l: [[[0, 'h/2, 'h], [f1, f2, f3]],
+[[0, 'h/2, 'h], [g1, g2, g3]]];
+
+apply('gordon2, [l]);
 
 
+l: [[[0, 'h], [c1, c3]],
+    [[0, 'h], [c2, c4]]];
+
+expr: apply('gordon2, [l]);
 expr: subst([h=1, s=v, t=u], expr);
 
-fullratsimp(expr_ref - expr);
+fullratsimp(expr - expr_ref);
