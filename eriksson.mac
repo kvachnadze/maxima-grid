@@ -1,0 +1,24 @@
+load("pdiff");
+load("opsubst");
+
+beta1(v):= 1 - ((v-v1)/(v2-v1))^2;
+beta2(v):= ( (v-v1)/(v2-v1) - ((v-v1)/(v2-v1))^2 )*(v2-v1);
+beta3(v):= ((v-v1)/(v2-v1))^2;
+change_args_order(e):=subst(F=lambda([a, b], funmake(F, [b, a])), e);
+eq22:  'F(u, v1)*beta1(v) + pderivop(F, 0, 1)(u, v1)*beta2(v) + F(u, v2)*beta3(v);
+eq22b: psubst([u=v, v=u, v1=u1, v2=u2], change_args_order(eq22));
+ev(eq22 , nouns);
+ev(eq22b, nouns);
+
+
+subst(pderivop=lambda([[l]], print(l)), pderivop(F, 0, 1)(u, v1));
+subst(pderivop=lambda([[l]], print(l)), pderivop(F, 0, 1)(u, v1));
+
+subst(pderivop(F,0,1)=g, eq22);
+
+
+subst(v=v1, eq22);
+subst(v=v2, eq22);
+d: diff(eq22, u);
+subst(v=v1, d);
+subst(v=v2, d);
