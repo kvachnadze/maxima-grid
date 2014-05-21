@@ -1,0 +1,26 @@
+f: lambda([x], k*x);
+g: lambda([y], k*y*y);
+
+lambda_args(la):= first(args(la));
+lambda_body(la):= second(args(la));
+
+lambda_op(la1, la2, fun):= 
+block([farg: lambda_args(la1), body1: lambda_body(la1), body2],
+  body2: psubst(maplist("=", lambda_args(la2), farg), lambda_body(la2)),
+  psubst(['body=fun(body1, body2), 'a=farg], lambda(a, body)));
+
+lambda_multiply_constant(la1, C):=
+block([la2: psubst(['body=C, 'a=gensym()], lambda([a], body))],
+    lambda_op(la1, la2, "*"));
+
+lambda_repeat(la1, la2):=
+block([arg1: lambda_args(la1), arg2: lambda_args(la2),
+  body2: lambda_body(la2), y, body_new],
+  y: psubst(first(arg2)=first(arg1), body2),
+  body_new: psubst(first(arg1)=y, lambda_body(la1)),
+  psubst(['body=body_new, 'a=arg1], lambda(a, body)));
+
+lambda_op(f, g, "+");
+lambda_repeat(f, g);
+lambda_multiply_constant(f, C);
+
