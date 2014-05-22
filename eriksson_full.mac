@@ -1,0 +1,173 @@
+kill(all);
+load("draw");
+load("numericalio");
+load("write-list-lowlevel.lisp");
+load("spline2.mac");
+load("line_and_circle.mac");
+load("smith.mac");
+load("eriksson.mac");
+
+load("integer_sequence");
+rmin: 0.2;
+rmax: 3.0;
+L   : 5.5;
+H   : 8.5;
+
+h2  : 2*L/3;
+[c1, c2, c3, c4]: line_and_circle(rmin, rmax, h2, 180);
+
+declare(Z, nonscalar);
+aux: boolean_sum(Z,   grad_proj1,  [0, 1],
+                      smith_projector, [[0, 1], 't]);
+gradef(charfun(p),0)$ 
+z: block([use_pdiff: false], diff(c1(s), s));
+nz: [part(z, 2), -part(z, 1)];
+k: 2/sqrt(subst(s=0, nz).subst(s=0, nz)) ;
+nz: nz*k;
+subst(s=0, nz);
+subst(s=1, nz);
+B1a: subst_with_rule( [ pderivop(Z,0,1)(s,0)=ev(nz, eval),
+  Z(s, 0)=c1(s), Z(s, 1)=c3(s),
+  Z(0, t)=c2(t), Z(1, t)=c4(t)],
+  aux);
+
+cm: maplist(mirror_element, [c1, c2, c3, c4]);
+B1b: apply('gordon, cm);
+
+[c1, c2, c3, c4]: create_par(h2, rmin, L, rmax);
+B2: gordon(c1, c2, c3, c4);
+
+[c1, c2, c3, c4]: create_par(h2, -rmin, L, -rmax);
+B3: gordon(c1, c2, c3, c4);
+
+[c1, c2, c3, c4]: create_par(L, -rmax, H, -rmin);
+B4: gordon(c1, c2, c3, c4);
+
+[c1, c2, c3, c4]: create_par(L, -rmin, H,  rmin);
+B5: gordon(c1, c2, c3, c4);
+
+[c1, c2, c3, c4]: create_par(L, rmin, H,   rmax);
+B6: gordon(c1, c2, c3, c4);
+
+phiscale: 2;
+phimax:  h2*90 / (%pi*rmin/2)  + 90;
+phispl: [
+[0    , 15    , 2.6*phiscale],
+'join,
+[60   , 120    , 1.1983*phiscale],
+'join,
+[200   , phimax, 2.6*phiscale]];
+phispl: replace_join(phispl)$
+phi_list: spline2points(phispl)$
+write_spline_list(phi_list, "dphi.dat");
+
+/* draw2d(point_size=3, points_joined=true, points(spline2xdx(phispl))); */
+
+rscale: 2;
+dmin  : 2*rmin;
+radspl: [
+[ rmin,  0.6*dmin, 0.01*rscale*dmin],
+'join,
+[ 5.0*dmin, 15.0*dmin, 0.13*rscale*dmin],
+[15.0*dmin, rmax, build_spline(15*dmin, 0.13*rscale*dmin, rmax, 0.9*rscale*dmin)] ]$
+radspl: replace_join(radspl)$
+rad_list : spline2points(radspl)$
+write_spline_list(rad_list, "drad.dat");
+/* draw2d(point_size=3, points_joined=true, points(spline2xdx(radspl))); */
+
+Lp: h2 + rmin*%pi/2;
+Phi: phimax;
+dphi: last(phi_list) - last(rest(phi_list, -1));
+from_cyl: float(Lp*dphi / Phi);
+b2spline: [
+[h2, 0.8*L,  from_cyl],
+'join,
+[0.9*L, L    , from_cyl/5]
+];
+b2spline: replace_join(b2spline)$
+b2_list : spline2points(b2spline)$
+write_spline_list(b2_list, "db2.dat");
+/* draw2d(point_size=3, points_joined=true, points(spline2xdx(b2spline)))$ */
+
+from_b2: last(b2_list) - last(rest(b2_list, -1))$
+b4spline: [
+[L, 1.1*L,  from_b2],
+[1.1*L, H, build_spline(1.1*L, from_b2, H, from_cyl)]
+];
+b4spline: replace_join(b4spline);
+b4_list : spline2points(b4spline, true)$
+/* draw2d(point_size=3, points_joined=true, points(spline2xdx(b4spline)), color='red, points(spline2xdx(b2spline))); */
+
+from_r: second(rad_list) - first(rad_list);
+b5spline: [
+[-rmin, -0.9*rmin,  from_r   ],
+'join,
+[-0.1*rmin, 0.1*rmin, from_r  ],
+'join,
+[0.9*rmin, rmin,  from_r ]
+];
+b5spline: replace_join(b5spline)$
+b5_list : spline2points(b5spline)$
+write_spline_list(b5_list, "db5.dat");
+/* draw2d(point_size=3, points_joined=true, points(spline2xdx(b5spline)))$ */
+/* draw2d(points(spline2xdx(b5spline)))$ */
+
+R1a: output_block(B1a, phi_list, rad_list, [false, false, true])$
+R1b: output_block(B1b, phi_list, rad_list, [true, false, true])$
+
+/* R1b: block([R: first(R1a)], [[first(R), lincombarray(second(R), -1, 0), third(R)], second(R1a)])$ */
+
+R2: output_block(B2, reverse(b2_list), rad_list, [false, false, true])$
+R3: output_block(B3, reverse(b2_list), rad_list, [true, false, true])$
+
+R4: output_block(B4, reverse(b4_list), reverse(rad_list), [true, true, true])$
+R5: output_block(B5, reverse(b4_list), b5_list, [false, false, true])$
+R6: output_block(B6, reverse(b4_list), rad_list, [false, false, true])$
+
+load("write-list-lowlevel.lisp");
+/*
+load("~/src/maxima-code/share/contrib/gentran/gentran.lisp");
+gentran( for i: 1 thru 10 do print(i));
+*/
+blist_sym: ['R1a, 'R1b, 'R2, 'R3, 'R4, 'R5, 'R6]$
+blist: map('ev, blist_sym)$
+
+vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+  rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$
+vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+  rest(v, -1)), block2vector(B, 2, 0.5)))), blist)$
+
+/*
+face: makelist(makelist(label(cons( sconcat(f, "_{", R, "}"), rest(block2facecenter(ev(R), f), -1))), f, [1, 2, 3, 4]),
+  R, [last(blist_sym), second(blist_sym)])$
+*/
+ 
+load("draw");
+draw2d(xrange=[-rmax, 1.1*H], yrange=[-rmax, H],
+  point_type = 7,
+  color='blue,      pxy(R1a),
+  color='magenta,   pxy(R1b),
+  color='red,   pxy(R2),
+  color='green, pxy(R3),
+  color='orange, pxy(R4),
+  color='magenta, pxy(R5),
+  color='violet, pxy(R6),
+  line_width = 3,
+  head_length = 0.1, color='black, vlistx, color='red, vlisty);
+
+o: openw("g.fmt");
+nblock: length(blist);
+printf(o, "~d~%", nblock);
+for bl in blist do printf(o, "~{~d ~}", block2n(bl));
+newline(o);
+for bindx thru length(blist) do block([bl: part(blist, bindx)],
+  write_data(first(block2array(bl)), o),
+  write_data(second(block2array(bl)), o),
+  write_data(third(block2array(bl)), o),
+  if bindx#length(blist) then newline(o));
+close(o);
+
+for el1 in blist do
+for el2 in blist do block(
+  c: blocks2faces_and_directions(el1, el2),
+  if not emptyp(c) then print(c));

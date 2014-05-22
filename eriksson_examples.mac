@@ -4,7 +4,7 @@ load("integer_sequence");
 load("line_and_circle.mac");
 load("eriksson.mac");
 
-rmin: 1.0;
+rmin: 0.2;
 rmax: 3.0;
 L   : 5.5;
 H   : 8.5;
@@ -12,21 +12,44 @@ H   : 8.5;
 h2  : L/2;
 [c1, c2, c3, c4]: line_and_circle(rmin, rmax, h2, 180);
 
+h2  : L/2;
+phiscale: 3;
+phimax:  h2*90 / (%pi*rmin/2)  + 90;
+phispl: [
+[0    , 15    , 2.6*phiscale],
+'join,
+[60   , 120    , 1.1983*phiscale],
+'join,
+[200   , phimax, 2.6*phiscale]];
+phispl: replace_join(phispl)$
+phi_list: spline2points(phispl)$
+write_spline_list(phi_list, "dphi.dat");
+
+/* draw2d(point_size=3, points_joined=true, points(spline2xdx(phispl))); */
+
+rscale: 3;
+dmin  : 2*rmin;
+radspl: [
+[ rmin,  0.6*dmin, 0.01*rscale*dmin],
+'join,
+[ 5.0*dmin, 15.0*dmin, 0.13*rscale*dmin],
+[15.0*dmin, rmax, build_spline(15*dmin, 0.13*rscale*dmin, rmax, 0.9*rscale*dmin)] ]$
+radspl: replace_join(radspl)$
+rad_list : spline2points(radspl)$
+
 l: [[[0, 1], [c2, c4]],
     [[0, 1], [c1, c3]]];
 
 declare(Z, nonscalar);
 aux: boolean_sum(Z,   grad_proj1,  [0, 1],
                       smith_projector, [[0, 1], 't]);
-
 gradef(charfun(p),0)$ 
 z: block([use_pdiff: false], diff(c1(s), s));
 nz: [part(z, 2), -part(z, 1)];
-k: 2/sqrt(subst(s=0, nz).subst(s=0, nz)) ;
+k: 2/sqrt(nz.nz);
 nz: nz*k;
 subst(s=0, nz);
 subst(s=1, nz);
-
 B1a: subst_with_rule( [ pderivop(Z,0,1)(s,0)=ev(nz, eval),
   Z(s, 0)=c1(s), Z(s, 1)=c3(s),
   Z(0, t)=c2(t), Z(1, t)=c4(t)],
@@ -35,7 +58,7 @@ B1a: subst_with_rule( [ pderivop(Z,0,1)(s,0)=ev(nz, eval),
 /* B1b: gordon2(l); */
 
 numer: true;
-R1a:   output_block(B1a, 1 .. 50, 1 .. 50, [false, false, true])$
+R1a:   output_block(B1a, phi_list, rad_list, [false, false, true])$
 
 load("draw");
 pxy(R)::=buildq([R], points(first(first(R)), second(first(R))));
