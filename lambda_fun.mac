@@ -1,6 +1,3 @@
-f: lambda([x], k*x);
-g: lambda([y], k*y*y);
-
 lambda_args(la):= first(args(la));
 lambda_body(la):= second(args(la));
 lambdap(la):= not atom(la) and part(la, 0)='lambda;
@@ -8,7 +5,7 @@ atom_to_lambda(la):=subst('a=gensym(), subst('body=la(a), lambda([a], body)));
 
 lambda_op(la1, la2, fun):=
 (if not lambdap(la1) then la1: atom_to_lambda(la1),
-  if not lambdap(la2) then la2: atom_to_lambda(la2),w
+  if not lambdap(la2) then la2: atom_to_lambda(la2),
   block([farg: lambda_args(la1), body1: lambda_body(la1), body2],
     body2: psubst(maplist("=", lambda_args(la2), farg), lambda_body(la2)),
     psubst(['body=fun(body1, body2), 'a=farg], lambda(a, body))));
@@ -36,11 +33,17 @@ lambda_diff_full(la1, ivar, d):=
   block([body1: lambda_body(la1), arg1: lambda_args(la1), body_new],
     body_new: diff(body1, part(arg1, ivar), d),
     psubst(['body=body_new, 'a=arg1], lambda(a, body))));
-  
+
+lambda_sum(la1, la2):=lambda_op(la1, la2, "+");
+lambda_minus(la1, la2):=lambda_op(la1, la2, "-");
+
+/*
+f: lambda([x], k*x);
+g: lambda([y], k*y*y);
 lambda_op(f, g, "+");
 lambda_repeat(f, g);
 lambda_multiply_constant(f, C);
 lambda_diff(g, 1, 2);
 lambda_op(u, g, "+");
-
 lambda_diff(gg);
+*/

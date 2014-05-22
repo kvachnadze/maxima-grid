@@ -1,0 +1,44 @@
+load("spline2.mac");
+load("smith.mac");
+load("integer_sequence");
+load("line_and_circle.mac");
+load("eriksson.mac");
+
+rmin: 1.0;
+rmax: 3.0;
+L   : 5.5;
+H   : 8.5;
+
+h2  : L/2;
+[c1, c2, c3, c4]: line_and_circle(rmin, rmax, h2, 180);
+
+l: [[[0, 1], [c2, c4]],
+    [[0, 1], [c1, c3]]];
+
+declare(Z, nonscalar);
+aux: boolean_sum(Z,   grad_proj1,  [0, 1],
+                      smith_projector, [[0, 1], 't]);
+
+gradef(charfun(p),0)$ 
+z: block([use_pdiff: false], diff(c1(s), s));
+nz: [part(z, 2), -part(z, 1)];
+k: 2/sqrt(subst(s=0, nz).subst(s=0, nz)) ;
+nz: nz*k;
+subst(s=0, nz);
+subst(s=1, nz);
+
+B1a: subst_with_rule( [ pderivop(Z,0,1)(s,0)=ev(nz, eval),
+  Z(s, 0)=c1(s), Z(s, 1)=c3(s),
+  Z(0, t)=c2(t), Z(1, t)=c4(t)],
+  aux);
+
+/* B1b: gordon2(l); */
+
+numer: true;
+R1a:   output_block(B1a, 1 .. 50, 1 .. 50, [false, false, true])$
+
+load("draw");
+pxy(R)::=buildq([R], points(first(first(R)), second(first(R))));
+
+draw2d( point_size=1, color='red, point_type=circle, pxy(R1a));
+

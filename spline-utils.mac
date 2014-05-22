@@ -197,6 +197,13 @@ lincombarray(A, al, be):= block([],
   for i: 0 thru alength(A)-1 do nA[i]: al*A[i]+be,
   print(nA[0]),
   nA);
-    
 
-
+%op_proj_vars%: ['s, 't];
+matchdeclare(t, all);
+matchdeclare(s, all);
+subst_with_rule(res, e):= block([listarith: false], 
+  if not listp(res) then error("`res' must be a list"),
+  for su in res do  (apply('defrule, [%r1%, lhs(su), rhs(su)]),
+    e: apply1(e, %r1%),
+    kill(%r1%)),
+  e);

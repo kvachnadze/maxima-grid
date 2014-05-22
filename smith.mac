@@ -1,5 +1,4 @@
-%op_proj_vars%: ['s, 't];
-
+load("spline-utils.mac");
 product_condition(P, cond, i, i0, i1)::=buildq([P, cond, i, i0, i1],
   product(if cond then P else 1, i, i0, i1));
 
@@ -26,6 +25,8 @@ op_projector(F, arg)::= buildq([F, arg],
   block([body: op_projector_aux(F, arg)],
     buildq([%op_proj_vars%, body], lambda([splice(%op_proj_vars%)], body))));
 
+smith_projector(F, arg):=apply(op_projector, [F, arg]);
+
 load("ctensor");
 one_arg_to_all(v, idx):= block([out: copylist(%op_proj_vars%)], local(out), out[idx]: v, out);
 pair_for_subst(a, b, idx):= funmake('F, one_arg_to_all(a, idx)) = funmake(b, deleten(%op_proj_vars%, idx));
@@ -35,13 +36,6 @@ vars_to_substlist(l):= block([res: []],
   res: append(res, maplist(lambda([a, b], pair_for_subst(a, b, i)), part(l, i, 1), part(l, i, 2))),
   res);
 
-matchdeclare(t, all);
-matchdeclare(s, all);
-subst_with_rule(res, e):= (
-  for su in res do  (apply('defrule, [%r1%, lhs(su), rhs(su)]),
-    e: apply1(e, %r1%),
-    kill(%r1%)),
-  e);
 
 gordon2_macro(l)::= 
   buildq([p1:  part(l, 1, 1), p2: part(l, 2, 1)],
