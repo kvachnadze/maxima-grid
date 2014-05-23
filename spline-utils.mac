@@ -1,6 +1,31 @@
 load("interpol");
 load("basic");
 
+lspline_simple(y):= lspline( linspace(0, 1, length(y)), y);
+
+/*
+(%i1) cumsum([1, 10, 100, 1000]);
+(%o1)                         [1, 11, 111, 1111]
+*/
+cumsum(l):= block([s: 0, out: []], for el in l do (s: s + el, out: cons(s, out)), reverse(out));
+
+/* return a function which does a linear re-scaling
+x1 -> y1
+x2 -> y2
+i(%i3) change_scale(0, 1, 100, 200)(0.5);
+(%o3)                                150.0
+*/
+change_scale(x1, x2, y1, y2)::=block([x], buildq([body: (x - x1)/(x2-x1)*(y2-y1) + y1], lambda([x], body)));
+
+list_to_zero_one(lst)::= buildq([lst],
+  maplist(change_scale(first(lst), last(lst), 0, 1), lst));
+
+linspace(a, b, n):= block([h: (b-a)/(n-1)], makelist( a + h*i, i, 0, n-1));
+lspline(x, l):= block([y: list_to_zero_one(l)],
+  psubst('body=block([z], sum(block([x1: part(x, i), x2: part(x, i+1), y1: part(y, i), y2: part(y, i+1)],
+          change_scale(x1, x2, y1, y2)(z)*charfun2(z, x1, x2)), i, 1, length(x)-1) + charfun2(z, last(x), inf)),
+    lambda([z], body)));
+
 write_spline_list(lst, fname):= block([flst: float(lst), out],
   if not every('numberp, flst) then error("all elements of `lst' shoud be atoms") else 
   out : maplist("[", rest(flst, -1), fdiff(flst)),
@@ -146,13 +171,6 @@ replace_join(lst):= block([out: []],
   else out: endcons(part(lst, q), out),
   out);
 
-/* return a function which does a linear re-scaling
-x1 -> y1
-x2 -> y2
-i(%i3) change_scale(0, 1, 100, 200)(0.5);
-(%o3)                                150.0
-*/
-change_scale(x1, x2, y1, y2)::=block([x], buildq([body: (x - x1)/(x2-x1)*(y2-y1) + y1], lambda([x], body)));
 
 /* find a function in spline strucutre */
 find_f(x, spl):= block([prederror: true], catch(for lst in spl do if x>=first(lst) and x<second(lst)

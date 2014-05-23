@@ -13,7 +13,7 @@ h2  : L/2;
 [c1, c2, c3, c4]: line_and_circle(rmin, rmax, h2, 180);
 
 h2  : L/2;
-phiscale: 3;
+phiscale: 5;
 phimax:  h2*90 / (%pi*rmin/2)  + 90;
 phispl: [
 [0    , 15    , 2.6*phiscale],
@@ -27,7 +27,7 @@ write_spline_list(phi_list, "dphi.dat");
 
 /* draw2d(point_size=3, points_joined=true, points(spline2xdx(phispl))); */
 
-rscale: 3;
+rscale: 5;
 dmin  : 2*rmin;
 radspl: [
 [ rmin,  0.6*dmin, 0.01*rscale*dmin],

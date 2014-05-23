@@ -1,0 +1,33 @@
+two_cirlces(rmin, rmax):= block([p1, p2, p3, p4, ca, cb, c1, c2, c3, c4, k, alpha: 180],
+  p2: [0  , rmin],
+  p3: [rmin*cos(alpha/180*%pi), rmin*sin(alpha/180*%pi)],
+  p4: [rmax*cos(alpha/180*%pi), rmax*sin(alpha/180*%pi)],
+  
+  cb : create_arc([0, 0], rmin, 90, alpha),
+  c1 : cb,
+  
+  p2: [0  , rmax],
+  cb : create_arc([0, 0], rmax, 90, alpha),
+  c3 : cb,
+  
+  c4: create_line(p3, p4),
+  c2: create_line( [0, rmin], [0, rmax]),
+  [c1, c2, c3, c4]);
+  
+/*
+rmin: 2.0;
+rmax: 3.0;
+h   : 5.5/2;
+alpha: 180;
+[c1, c2, c3, c4]: line_and_circle(rmin, rmax, h, alpha);
+
+draw2d(xrange=[-4, 4], yrange=[-4, 4], parametric( c1(s)[1], c1(s)[2], s, 0.9, 1),
+  parametric( c3(s)[1], c3(s)[2], s, 0, 1), parametric( c2(s)[1], c2(s)[2], s, 0, 1),
+  parametric( c4(s)[1], c4(s)[2], s, 0, 1),
+  point_size=5, color='red, points ( [ c3(2/4) ] ));
+G: gordon(c1, c2, c3, c4);
+load("integer_sequence");
+R: first(output_block(G, 0 .. 30, 0 .. 10))$
+load("draw");
+draw2d(xrange=[-4, 4], yrange=[-4, 4], point_size=1, point_type=7, points(first(R), second(R)) )$
+*/

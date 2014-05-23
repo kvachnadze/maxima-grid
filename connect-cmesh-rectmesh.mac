@@ -1,0 +1,82 @@
+kill(all);
+load("draw");
+load("numericalio");
+load("write-list-lowlevel.lisp");
+load("spline2.mac");
+load("two_cirlces.mac");
+load("lambda_fun.mac");
+
+load("integer_sequence");
+rmin: 0.2;
+rmax: 3.0;
+L   : 5.5;
+H   : 8.5;
+
+[c1, c2, c3, c4]: two_cirlces(rmin, rmax);
+B1a: gordon(c1, c2, c3, c4);
+
+[c1, c2, c3, c4]: create_par(0, rmin, L, rmax);
+B2: gordon(c1, c2, c3, c4);
+
+phi_list: 1 .. 10;
+rad_list: 1 .. 10;
+b2_list:  1 .. 10;
+R1a: output_block(B1a, reverse(phi_list), rad_list, [false, false, true])$
+R2: output_block(B2, reverse(b2_list), rad_list, [false, false, true])$
+
+blist_sym: ['R1a, 'R2];
+blist: map('ev, blist_sym)$
+vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+  rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$
+vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+          rest(v, -1)), block2vector(B, 2, 0.5)))), blist)$
+
+/* maximum stretching */
+pstr: 0.9;
+d1: first(blockijk2xyz_withcode(R1a, [1, 1, 1])) - first(blockijk2xyz_withcode(R1a, [2, 1, 1]));
+d2: first(blockijk2xyz_withcode(R1a,  [1, 'max, 1])) - first(blockijk2xyz_withcode(R1a, [2, 'max, 1]));
+dfin: (d1+d2)/2;
+dmax: 1.2*d2;
+
+n2_fin: rhs(first(ev(solve(d2*pstr^('n-1) = dfin, 'n), numer)));
+n1_max: rhs(first(ev(solve(d1/pstr^('n-1) = dmax, 'n), numer)));
+
+declare(n1_max_fin, integer);
+px: rhs(first(solve( dmax*'px^('n1_max_fin-1) = dfin, 'px)));
+L1: sum(d1*pstr^(n-1), n, 1, n1_max) + sum( dmax*px^(n-1), n, 1, 'n1_max_fin);
+L2: sum(d1*(1/pstr)^(n-1), n, 1, n2_fin) + ('n1_max_fin + n1_max - n2_fin)*dfin;
+
+
+n1_max_fin: 2;
+do if ev(L1-L2, sum)>0 then return(n1_max_fin) else n1_max_fin: n1_max_fin + 1;
+Lr: ev(L2, sum, numer);
+
+up_spl: append(create_list(d2*pstr^(n-1), n, 1, round(n2_fin)),
+  create_list(dfin,      n, 1, round(n1_max_fin) + round(n1_max) - round(n2_fin)))$
+up_list: cumsum(up_spl)$
+
+px: ev(px, numer);
+do_spl: append(create_list(d1/pstr^(n-1), n, 1, round(n1_max)),
+  create_list(dmax*px^(n-1), n, 1, round(n1_max_fin)))$
+do_spl: ev(do_spl, numer)$
+do_list: cumsum(do_spl)$
+
+[c1, c2, c3, c4]: create_par(0, rmin, Lr, rmax)$
+up_fun  : lspline_simple(reverse(up_list))$
+do_fun: lspline_simple(reverse(do_list))$
+
+c1n: lambda_repeat(c1, do_fun)$
+c3n: lambda_repeat(c3, up_fun)$
+B2: gordon(c1n, c2, c3n, c4)$
+R2: output_block(B2, 1 .. length(up_list), rad_list, [false, false, true])$
+  
+load("draw");
+draw2d(xrange=[-rmax, 1.1*Lr], yrange=[-rmax, H],
+  point_type = 7,
+  color='blue,      pxy(R1a),
+  color='red,   pxy(R2),
+  line_width = 3,
+  head_length = 0.1, color='black, vlistx, color='red, vlisty);
+
+
+
