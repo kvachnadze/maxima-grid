@@ -15,28 +15,17 @@ H   : 8.5;
 [c1, c2, c3, c4]: two_cirlces(rmin, rmax);
 B1a: gordon(c1, c2, c3, c4);
 
-[c1, c2, c3, c4]: create_par(0, rmin, L, rmax);
-B2: gordon(c1, c2, c3, c4);
-
-phi_list: 1 .. 10;
-rad_list: 1 .. 10;
-b2_list:  1 .. 10;
+phi_list: 1 .. 30;
+rad_list: 1 .. 30;
+b2_list:  1 .. 30;
 R1a: output_block(B1a, reverse(phi_list), rad_list, [false, false, true])$
-R2: output_block(B2, reverse(b2_list), rad_list, [false, false, true])$
-
-blist_sym: ['R1a, 'R2];
-blist: map('ev, blist_sym)$
-vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
-  rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$
-vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
-          rest(v, -1)), block2vector(B, 2, 0.5)))), blist)$
 
 /* maximum stretching */
 pstr: 0.9;
 d1: first(blockijk2xyz_withcode(R1a, [1, 1, 1])) - first(blockijk2xyz_withcode(R1a, [2, 1, 1]));
 d2: first(blockijk2xyz_withcode(R1a,  [1, 'max, 1])) - first(blockijk2xyz_withcode(R1a, [2, 'max, 1]));
-dfin: (d1+d2)/2;
-dmax: 1.2*d2;
+dfin: (8*d1+2*d2)/10;
+dmax: 8/10*d2;
 
 n2_fin: rhs(first(ev(solve(d2*pstr^('n-1) = dfin, 'n), numer)));
 n1_max: rhs(first(ev(solve(d1/pstr^('n-1) = dmax, 'n), numer)));
@@ -69,6 +58,14 @@ c1n: lambda_repeat(c1, do_fun)$
 c3n: lambda_repeat(c3, up_fun)$
 B2: gordon(c1n, c2, c3n, c4)$
 R2: output_block(B2, 1 .. length(up_list), rad_list, [false, false, true])$
+
+blist_sym: ['R1a, 'R2];
+blist: map('ev, blist_sym)$
+vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+  rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$
+vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+          rest(v, -1)), block2vector(B, 2, 0.5)))), blist)$
+
   
 load("draw");
 draw2d(xrange=[-rmax, 1.1*Lr], yrange=[-rmax, H],
@@ -78,5 +75,14 @@ draw2d(xrange=[-rmax, 1.1*Lr], yrange=[-rmax, H],
   line_width = 3,
   head_length = 0.1, color='black, vlistx, color='red, vlisty);
 
-
-
+o: openw("g.fmt");
+nblock: length(blist);
+printf(o, "~d~%", nblock);
+for bl in blist do printf(o, "~{~d ~}", block2n(bl));
+newline(o);
+for bindx thru length(blist) do block([bl: part(blist, bindx)],
+  write_data(first(block2array(bl)), o),
+  write_data(second(block2array(bl)), o),
+  write_data(third(block2array(bl)), o),
+  if bindx#length(blist) then newline(o));
+close(o);
