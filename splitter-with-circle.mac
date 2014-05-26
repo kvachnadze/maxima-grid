@@ -184,7 +184,7 @@ nwin  : makelist(6, iblock, nblock);
 npbc  : makelist(0, iblock, nblock);
 nbbc  : makelist(0, iblock, nblock);
 mshwin : makelist(makelist(1, iwin, nwin[iblock]), iblock, nblock);
-mshwbc : makelist(makelist('und, iwin, nwin[iblock]), iblock, nblock);
+mshwbc : makelist(makelist(777, iwin, nwin[iblock]), iblock, nblock);
 blkcon : makelist([], i, nblock);
 blkfac : makelist([], i, nblock);
 blkdef : makelist([], i, nblock);
