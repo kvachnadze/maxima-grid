@@ -7,10 +7,11 @@ load("two_cirlces.mac");
 load("lambda_fun.mac");
 
 load("integer_sequence");
-rmin: 0.2;
-rmax: 3.0;
-L   : 5.5;
-H   : 8.5;
+k_rescale: 0.31116308;
+rmin: 0.2*k_rescale;
+rmax: 3.0*k_rescale;
+L   : 5.5*k_rescale;
+H   : 11.5*k_rescale;
 
 [c1, c2, c3, c4]: two_cirlces(rmin, rmax);
 B1a: gordon(c1, c2, c3, c4);
@@ -21,7 +22,7 @@ b2_list:  1 .. 30;
 R1a: output_block(B1a, reverse(phi_list), rad_list, [false, false, true])$
 
 /* maximum stretching */
-pstr: 0.9;
+pstr: 0.95;
 d1: first(blockijk2xyz_withcode(R1a, [1, 1, 1])) - first(blockijk2xyz_withcode(R1a, [2, 1, 1]));
 d2: first(blockijk2xyz_withcode(R1a,  [1, 'max, 1])) - first(blockijk2xyz_withcode(R1a, [2, 'max, 1]));
 dfin: (8*d1+2*d2)/10;
@@ -35,22 +36,28 @@ px: rhs(first(solve( dmax*'px^('n1_max_fin-1) = dfin, 'px)));
 L1: sum(d1*pstr^(n-1), n, 1, n1_max) + sum( dmax*px^(n-1), n, 1, 'n1_max_fin);
 L2: sum(d1*(1/pstr)^(n-1), n, 1, n2_fin) + ('n1_max_fin + n1_max - n2_fin)*dfin;
 
-
 n1_max_fin: 2;
 do if ev(L1-L2, sum)>0 then return(n1_max_fin) else n1_max_fin: n1_max_fin + 1;
 Lr: ev(L2, sum, numer);
 
+extend_to_end(o_list, d, Lend):=
+(if not listp(o_list) then error("`o_list' should be a list"),
+  if Lend<last(o_list) then error("Lend should be smaller than `last(o_list)'"),
+  append(o_list, spline2points([[ last(o_list)+d, Lend, dfin]])));
+
 up_spl: append(create_list(d2*pstr^(n-1), n, 1, round(n2_fin)),
   create_list(dfin,      n, 1, round(n1_max_fin) + round(n1_max) - round(n2_fin)))$
 up_list: cumsum(up_spl)$
+up_list: extend_to_end(up_list, dfin, L);
 
 px: ev(px, numer);
 do_spl: append(create_list(d1/pstr^(n-1), n, 1, round(n1_max)),
   create_list(dmax*px^(n-1), n, 1, round(n1_max_fin)))$
 do_spl: ev(do_spl, numer)$
 do_list: cumsum(do_spl)$
+do_list: extend_to_end(do_list, dfin, L);
 
-[c1, c2, c3, c4]: create_par(0, rmin, Lr, rmax)$
+[c1, c2, c3, c4]: create_par(0, rmin, L, rmax)$
 up_fun  : lspline_simple(reverse(up_list))$
 do_fun: lspline_simple(reverse(do_list))$
 
@@ -68,7 +75,7 @@ vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
 
   
 load("draw");
-draw2d(xrange=[-rmax, 1.1*Lr], yrange=[-rmax, H],
+draw2d(xrange=[-rmax, 1.1*L], yrange=[-rmax, H],
   point_type = 7,
   color='blue,      pxy(R1a),
   color='red,   pxy(R2),
