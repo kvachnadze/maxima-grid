@@ -1,0 +1,167 @@
+kill(all);
+load("draw");
+load("numericalio");
+load("write-list-lowlevel.lisp");
+load("spline2.mac");
+load("two_cirlces.mac");
+load("lambda_fun.mac");
+
+load("integer_sequence");
+k_rescale: 0.31116308;
+rmin: 0.2*k_rescale;
+rmax: 3.0*k_rescale;
+L   : 5.5*k_rescale;
+H   : 11.5*k_rescale;
+h2  : L/2;
+
+[c1, c2, c3, c4]: two_cirlces(rmin, rmax, 270);
+B1a: gordon(c1, c2, c3, c4);
+
+phiscale: 10;
+phimax:   270;
+phispl: [[0    , phimax,    0.4*phiscale]];
+phispl: replace_join(phispl)$
+phi_list: spline2points(phispl)$
+write_spline_list(phi_list, "dphi.dat");
+
+rscale: 5;
+dmin  : 2*rmin;
+radspl: [
+[ rmin,  0.6*dmin, 0.01*rscale*dmin],
+'join,
+[ 5.0*dmin, 15.0*dmin, 0.13*rscale*dmin],
+[15.0*dmin, rmax, build_spline(15*dmin, 0.13*rscale*dmin, rmax, 0.9*rscale*dmin)] ]$
+radspl: replace_join(radspl)$
+rad_list : spline2points(radspl)$
+write_spline_list(rad_list, "drad.dat");
+b2_list:  1 .. 30;
+R1a: output_block(B1a, reverse(phi_list), rad_list, [false, false, true])$
+
+/* maximum stretching */
+pstr: 0.95;
+d1: first(blockijk2xyz_withcode(R1a, [1, 1, 1])) - first(blockijk2xyz_withcode(R1a, [2, 1, 1]));
+d2: first(blockijk2xyz_withcode(R1a,  [1, 'max, 1])) - first(blockijk2xyz_withcode(R1a, [2, 'max, 1]));
+dfin: (8*d1+2*d2)/10;
+dmax: 8/10*d2;
+
+n2_fin: rhs(first(ev(solve(d2*pstr^('n-1) = dfin, 'n), numer)));
+n1_max: rhs(first(ev(solve(d1/pstr^('n-1) = dmax, 'n), numer)));
+
+declare(n1_max_fin, integer);
+px: rhs(first(solve( dmax*'px^('n1_max_fin-1) = dfin, 'px)));
+L1: sum(d1*pstr^(n-1), n, 1, n1_max) + sum( dmax*px^(n-1), n, 1, 'n1_max_fin);
+L2: sum(d1*(1/pstr)^(n-1), n, 1, n2_fin) + ('n1_max_fin + n1_max - n2_fin)*dfin;
+
+n1_max_fin: 2;
+do if ev(L1-L2, sum)>0 then return(n1_max_fin) else n1_max_fin: n1_max_fin + 1;
+Lr: ev(L2, sum, numer);
+
+extend_to_end(o_list, d, Lend):=
+(if not listp(o_list) then error("`o_list' should be a list"),
+  if Lend<last(o_list) then error("Lend should be smaller than `last(o_list)'"),
+  append(o_list, spline2points([[ last(o_list)+d, Lend, dfin]])));
+
+up_spl: append(create_list(d2*pstr^(n-1), n, 1, round(n2_fin)),
+  create_list(dfin,      n, 1, round(n1_max_fin) + round(n1_max) - round(n2_fin)))$
+up_list: cumsum(up_spl)$
+up_list: extend_to_end(up_list, dfin, L);
+
+px: ev(px, numer);
+do_spl: append(create_list(d1/pstr^(n-1), n, 1, round(n1_max)),
+  create_list(dmax*px^(n-1), n, 1, round(n1_max_fin)))$
+do_spl: ev(do_spl, numer)$
+do_list: cumsum(do_spl)$
+do_list: extend_to_end(do_list, dfin, L);
+
+[c1, c2, c3, c4]: create_par(0, rmin, L, rmax)$
+up_fun  : lspline_simple(reverse(up_list))$
+do_fun: lspline_simple(reverse(do_list))$
+
+c1n: lambda_repeat(c1, do_fun)$
+c3n: lambda_repeat(c3, up_fun)$
+B2: gordon(c1n, c2, c3n, c4)$
+R2: output_block(B2, 1 .. length(up_list), rad_list, [false, false, true])$
+
+[c1, c2, c3, c4]: create_par(h2, -rmin, L, -rmax);
+B3: gordon(c1, c2, c3, c4);
+
+[c1, c2, c3, c4]: create_par(L, -rmax, H, -rmin);
+B4: gordon(c1, c2, c3, c4);
+
+[c1, c2, c3, c4]: create_par(L, -rmin, H,  rmin);
+B5: gordon(c1, c2, c3, c4);
+
+[c1, c2, c3, c4]: create_par(L, rmin, H,   rmax);
+B6: gordon(c1, c2, c3, c4);
+
+Lp: h2 + rmin*%pi/2;
+Phi: phimax;
+dphi: second(phi_list) - first(phi_list);
+from_cyl: float(Lp*dphi / Phi);
+b2spline: [
+[h2, 0.8*L,  from_cyl],
+'join,
+[0.9*L, L    , from_cyl/5]
+];
+b2spline: replace_join(b2spline)$
+b2_list : spline2points(b2spline)$
+write_spline_list(b2_list, "db2.dat");
+/* draw2d(point_size=3, points_joined=true, points(spline2xdx(b2spline)))$ */
+
+from_b2: last(b2_list) - last(rest(b2_list, -1))$
+b4spline: [
+[L, 1.1*L,  from_b2],
+[1.1*L, H, build_spline(1.1*L, from_b2, H, from_cyl)]
+];
+b4spline: replace_join(b4spline);
+b4_list : spline2points(b4spline, true)$
+/* draw2d(point_size=3, points_joined=true, points(spline2xdx(b4spline)), color='red, points(spline2xdx(b2spline))); */
+
+from_r: second(rad_list) - first(rad_list);
+b5spline: [
+[-rmin, -0.9*rmin,  from_r   ],
+'join,
+[-0.1*rmin, 0.1*rmin, from_r  ],
+'join,
+[0.9*rmin, rmin,  from_r ]
+];
+b5spline: replace_join(b5spline)$
+b5_list : spline2points(b5spline)$
+write_spline_list(b5_list, "db5.dat");
+
+R3: output_block(B3, reverse(b2_list), rad_list, [true, false, true])$
+R5: output_block(B5, reverse(b4_list), b5_list, [false, false, true])$
+R4: output_block(B4, reverse(b4_list), reverse(rad_list), [true, true, true])$
+R6: output_block(B6, reverse(b4_list), rad_list, [false, false, true])$
+load("write-list-lowlevel.lisp");
+
+
+blist_sym: ['R1a, 'R2, 'R4, 'R5, 'R6]$
+blist: map('ev, blist_sym)$
+vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+  rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$
+vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+          rest(v, -1)), block2vector(B, 2, 0.5)))), blist)$
+
+load("draw");
+draw2d(xrange=[-rmax, 1.1*H], yrange=[-rmax, H],
+  point_type = 7,
+  color='blue,      pxy(R1a),
+  color='red,   pxy(R2),
+  color='orange, pxy(R4),
+  color='magenta, pxy(R5),
+  color='violet, pxy(R6),
+  line_width = 3,
+  head_length = 0.1, color='black, vlistx, color='red, vlisty);
+
+o: openw("g.fmt");
+nblock: length(blist);
+printf(o, "~d~%", nblock);
+for bl in blist do printf(o, "~{~d ~}", block2n(bl));
+newline(o);
+for bindx thru length(blist) do block([bl: part(blist, bindx)],
+  write_data(first(block2array(bl)), o),
+  write_data(second(block2array(bl)), o),
+  write_data(third(block2array(bl)), o),
+  if bindx#length(blist) then newline(o));
+close(o);
