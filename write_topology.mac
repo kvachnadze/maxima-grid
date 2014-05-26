@@ -1,0 +1,73 @@
+write_topology(blist, mshwbc, tfile):= block(
+[
+nblock, nwin, npbc, nbbc, mshwin,
+blkcon, blkfac, blkdef, blkdir, mshwbcfam, mshwdf, mshtitle,
+mshcomment, mshtype, mshpers, cref, sref, xyzref],
+
+nblock: length(blist),
+nwin  : makelist(6, iblock, nblock),
+npbc  : makelist(0, iblock, nblock),
+nbbc  : makelist(0, iblock, nblock),
+mshwin : makelist(makelist(1, iwin, 6), iblock, nblock),
+
+blkcon : makelist([], i, nblock),
+blkfac : makelist([], i, nblock),
+blkdef : makelist([], i, nblock),
+blkdir : makelist([], i, nblock),
+mshwbcfam : makelist(makelist(0, iwin, nwin[iblock]), iblock, nblock),
+for iblock1 thru nblock do
+for iblock2 thru nblock do block(
+  [bl1: part(blist, iblock1),
+   bl2 : part(blist, iblock2), c],
+  c: blocks2faces_and_directions(bl1, bl2),
+  if not emptyp(c) then block([my_face: first(c), other_face: second(c)], 
+    mshwbc[iblock1][my_face]:  500,
+    blkcon[iblock1]: cons([my_face, iblock2], blkcon[iblock1]),
+    blkfac[iblock1]: cons([my_face, other_face], blkfac[iblock1]),
+    blkdef[iblock1]: cons([my_face, win2idx(bl1, my_face)], blkdef[iblock1]),
+    blkdir[iblock1]: cons([my_face, c2nsmbdirection(c)], blkdir[iblock1]),
+    nbbc[iblock1]: nbbc[iblock1] + 1)),
+
+/* sort by `my_face' value */
+blkcon: maplist(  lambda([q], maplist('second, q)), maplist('sort, blkcon)),
+blkfac: maplist(  lambda([q], maplist('second, q)), maplist('sort, blkfac)),
+blkdef: maplist(  lambda([q], maplist('second, q)), maplist('sort, blkdef)),
+blkdir: maplist(  lambda([q], maplist('second, q)), maplist('sort, blkdir)),
+
+mshwdf: makelist(makelist('und, iwin, nwin[iblock]), iblock, nblock),
+for iblock thru nblock do 
+for iwin    thru nwin[iblock] do
+block([bl: part(blist, iblock), listarith: true],
+  mshwdf[iblock][iwin]: win2idx(bl, iwin)),
+
+mshtitle: "Splitter_scale4",
+mshcomment: "Single splitter mesh",
+mshtype: "2D with 2 cells in z-direction",
+mshpers: "Vachnadze/Litvinov",
+cref:    1.0,
+sref:    1.0,
+xyzref: [0.0, 0.0, 0.0],
+
+with_stdout(tfile,
+  block([listarith: true],
+    printf(true, "~80a~%", mshtitle),
+    printf(true, "~80a~%", mshcomment),
+    printf(true, "~30a~%", mshtype),
+    printf(true, "~30a~%", mshpers),
+    printf(true, "~25,17g ~%",   cref),
+    printf(true, "~25,17g ~%",   sref),
+    printf(true, "~{~25,17g ~}~%",   xyzref),
+    printf(true, "~12d~%", nblock),
+    for iblock thru nblock do (
+      block([el1: part(blist, iblock)],
+        printf(true, "~{~12d~}   ~a~5d~%",
+          block2n(el1)-1, "Block:", iblock)),
+      printf(true, "~{~12d~}~%", apart(iblock, nwin, npbc, nbbc)),
+      printf(true, "~{~12d~}~%", mshwin[iblock]),
+      printf(true, "~{~12d~}~%", mshwbc[iblock]),
+      printf(true, "~{~12d~}~%", mshwbcfam[iblock]),
+      printf(true, "~{~12d~}~%", flatten(mshwdf[iblock])),
+      printf(true, "~{~12d~}~%", blkcon[iblock]),
+      printf(true, "~{~12d~}~%", blkfac[iblock]),
+      printf(true, "~{~12d~}~%", flatten(blkdef[iblock])),
+      printf(true, "~{~12d~}~%", flatten(blkdir[iblock]))))));
