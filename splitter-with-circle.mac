@@ -104,7 +104,7 @@ R1b: output_block(B1b, reverse(phi_list), rad_list, [true, false, true])$
 R2: output_block(B2, reverse(b2_list), rad_list, [false, false, true])$
 R3: output_block(B3, reverse(b2_list), rad_list, [true, false, true])$
 
-R4: output_block(B4, reverse(b4_list), reverse(rad_list), [false, false, true])$
+R4: output_block(B4, reverse(b4_list), reverse(rad_list), [true, true, true])$
 R5: output_block(B5, reverse(b4_list), b5_list, [false, false, true])$
 R6: output_block(B6, reverse(b4_list), rad_list, [false, false, true])$
 
@@ -184,7 +184,15 @@ nwin  : makelist(6, iblock, nblock);
 npbc  : makelist(0, iblock, nblock);
 nbbc  : makelist(0, iblock, nblock);
 mshwin : makelist(makelist(1, iwin, nwin[iblock]), iblock, nblock);
-mshwbc : makelist(makelist(777, iwin, nwin[iblock]), iblock, nblock);
+mshwbc : makelist(makelist('und, iwin, nwin[iblock]), iblock, nblock);
+mshwbc[1]: [500, 500, 300, 130, 410, 410];
+mshwbc[2]: [500, 500, 300, 130, 410, 410];
+mshwbc[3]: [500, 500, 300, 130, 410, 410];
+mshwbc[4]: [500, 500, 300, 130, 410, 410];
+mshwbc[5]: [500, 230, 500, 130, 410, 410];
+mshwbc[6]: [230, 300, 500, 500, 410, 410];
+mshwbc[7]: [230, 500, 500, 130, 410, 410];
+
 blkcon : makelist([], i, nblock);
 blkfac : makelist([], i, nblock);
 blkdef : makelist([], i, nblock);
@@ -219,7 +227,7 @@ block([bl: part(blist, iblock), listarith: true],
 mshtitle: "Splitter_scale4";
 mshcomment: "Single splitter mesh";
 mshtype: "2D with 2 cells in z-direction";
-mshpers: "Gogi+Litvinov";
+mshpers: "Vachnadze/Litvinov";
 cref:    1.0;
 sref:    1.0;
 xyzref: [0.0, 0.0, 0.0];
@@ -232,7 +240,7 @@ with_stdout("g.topo",
     printf(true, "~30a~%", mshpers),
     printf(true, "~25,17g ~%",   cref),
     printf(true, "~25,17g ~%",   sref),
-    printf(true, "~{~25,16g ~}~%",   xyzref),
+    printf(true, "~{~25,17g ~}~%",   xyzref),
     printf(true, "~12d~%", nblock),
     for iblock thru nblock do (
       el1: part(blist, iblock),
@@ -247,6 +255,3 @@ with_stdout("g.topo",
       printf(true, "~{~12d~}~%", blkfac[iblock]),
       printf(true, "~{~12d~}~%", flatten(blkdef[iblock])),
       printf(true, "~{~12d~}~%", flatten(blkdir[iblock])))));
-
-
-
