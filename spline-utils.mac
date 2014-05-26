@@ -1,6 +1,37 @@
 load("interpol");
 load("basic");
 
+/*
+(%i1) indexfilter([10, 20, 30], [1, 2, false]);
+(%o1)                              [10, 20]
+(%i2) indexfilter([10, 20, 30], [1, false, 3]);
+(%o2)                              [10, 30]
+(%i1) indexfilter([10, 20, 30], [3, false, 1]);
+(%o1)                              [30, 10]
+*/
+indexfilter(l, idx):= (
+if length(l)#length(idx) then error("length of `l' and `idx' must be the same"),
+block([out: [], prederror: true], for i thru length(l) do if part(idx, i)#false then out: cons(part(l, part(idx, i)), out),
+  reverse(out)));
+
+/*
+(%i1) sublist_except_index([10, 20, 30], 2);
+(%o1)                              [10, 30]
+*/
+sublist_except_index(l, idx):= block([out: []],
+  if not listp(l) then error("`l' should be a list"), 
+  for n thru length(l) do if n#idx then out: cons(part(l, n), out),
+  reverse(out));
+
+/*
+Make a list of `idx' elements of all lists
+(%i1) apart(3, [1, 2, 3], [10, 20, 30]);
+(%o1)                               [3, 30]
+*/
+apart(idx, [l]):=(
+  if not integerp(idx) or idx<=0 then error("wrong idx"),
+  maplist( lambda([el], part(el, idx)), l));
+
 lspline_simple(y):= lspline( linspace(0, 1, length(y)), y);
 
 /*

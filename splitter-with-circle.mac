@@ -61,7 +61,7 @@ write_spline_list(rad_list, "drad.dat");
 
 Lp: h2 + rmin*%pi/2;
 Phi: phimax;
-dphi: last(phi_list) - last(rest(phi_list, -1));
+dphi: second(phi_list) - first(phi_list);
 from_cyl: float(Lp*dphi / Phi);
 b2spline: [
 [h2, 0.8*L,  from_cyl],
@@ -96,15 +96,15 @@ write_spline_list(b5_list, "db5.dat");
 /* draw2d(point_size=3, points_joined=true, points(spline2xdx(b5spline)))$ */
 /* draw2d(points(spline2xdx(b5spline)))$ */
 
-R1a: output_block(B1a, phi_list, rad_list, [false, false, true])$
-R1b: output_block(B1b, phi_list, rad_list, [true, false, true])$
+R1a: output_block(B1a, reverse(phi_list), rad_list, [false, false, true])$
+R1b: output_block(B1b, reverse(phi_list), rad_list, [true, false, true])$
 
 /* R1b: block([R: first(R1a)], [[first(R), lincombarray(second(R), -1, 0), third(R)], second(R1a)])$ */
 
 R2: output_block(B2, reverse(b2_list), rad_list, [false, false, true])$
 R3: output_block(B3, reverse(b2_list), rad_list, [true, false, true])$
 
-R4: output_block(B4, reverse(b4_list), reverse(rad_list), [true, true, true])$
+R4: output_block(B4, reverse(b4_list), reverse(rad_list), [false, false, true])$
 R5: output_block(B5, reverse(b4_list), b5_list, [false, false, true])$
 R6: output_block(B6, reverse(b4_list), rad_list, [false, false, true])$
 
@@ -151,7 +151,102 @@ for bindx thru length(blist) do block([bl: part(blist, bindx)],
   if bindx#length(blist) then newline(o));
 close(o);
 
-for el1 in blist do
-for el2 in blist do block(
-  c: blocks2faces_and_directions(el1, el2),
-  if not emptyp(c) then print(c));
+
+
+
+/*
+(%i138) find_first([[1, 2], [3, 4]], 3);
+(%o138)                             [3, 4]
+*/
+find_first(l, q):= catch( for el in l do if first(el)=q then throw(el), false);
+decode_n2ikj(n):= if n=1 then 'i else if n=2 then 'j else if n=3 then 'k else error("n should be in [1, 2, 3]");
+decode_ijk2n(idx):= if idx='i then 1 else if idx='j then 2 else if idx='k then 3 else error("idx should be in ['i, 'j, 'k]");
+c2nsmbdirection(c):= block([f: face2bool(first(c)), rst: rest(c, 2), out: []],
+  for idx in f do if idx#false then block([other: find_first(rst, decode_n2ikj(idx))],
+    scd: decode_ijk2n(second(other)),
+    if rest(other, 2)=[0, 1] then push(scd, out)
+    else if rest(other, 2)=[1, 0] then push(-scd, out)
+    else error("something is wrong with orientation")),
+  reverse(out));
+
+/*
+blist[1][2]: [78, 46, 3];
+blist[2][2]: [78, 46, 3];
+blist[3][2]: [124, 46, 3];
+blist[4][2]: [124, 46, 3];
+blist[5][2]: [186, 46, 3];
+blist[6][2]: [186, 41, 3];
+blist[7][2]: [186, 46, 3];
+*/
+
+nblock: length(blist);
+nwin  : makelist(6, iblock, nblock);
+npbc  : makelist(0, iblock, nblock);
+nbbc  : makelist(0, iblock, nblock);
+mshwin : makelist(makelist(1, iwin, nwin[iblock]), iblock, nblock);
+mshwbc : makelist(makelist('und, iwin, nwin[iblock]), iblock, nblock);
+blkcon : makelist([], i, nblock);
+blkfac : makelist([], i, nblock);
+blkdef : makelist([], i, nblock);
+blkdir : makelist([], i, nblock);
+mshwbcfam : makelist(makelist(0, iwin, nwin[iblock]), iblock, nblock);
+for iblock1 thru nblock do
+for iblock2 thru nblock do block(
+  [bl1: part(blist, iblock1),
+   bl2 : part(blist, iblock2), c],
+  c: blocks2faces_and_directions(bl1, bl2),
+  if not emptyp(c) then block([my_face: first(c), other_face: second(c)], 
+    mshwbc[iblock1][my_face]:  500,
+    blkcon[iblock1]: cons([my_face, iblock2], blkcon[iblock1]),
+    blkfac[iblock1]: cons([my_face, other_face], blkfac[iblock1]),
+    blkdef[iblock1]: cons([my_face, win2idx(bl1, my_face)], blkdef[iblock1]),
+    blkdir[iblock1]: cons([my_face, c2nsmbdirection(c)], blkdir[iblock1]),
+    nbbc[iblock1]: nbbc[iblock1] + 1,
+    print(c)));
+
+/* sort by `my_face' value */
+blkcon: maplist(  lambda([q], maplist('second, q)), maplist('sort, blkcon));
+blkfac: maplist(  lambda([q], maplist('second, q)), maplist('sort, blkfac));
+blkdef: maplist(  lambda([q], maplist('second, q)), maplist('sort, blkdef));
+blkdir: maplist(  lambda([q], maplist('second, q)), maplist('sort, blkdir));
+
+mshwdf: makelist(makelist('und, iwin, nwin[iblock]), iblock, nblock);
+for iblock thru nblock do 
+for iwin    thru nwin[iblock] do
+block([bl: part(blist, iblock), listarith: true],
+  mshwdf[iblock][iwin]: win2idx(bl, iwin));
+
+mshtitle: "Splitter_scale4";
+mshcomment: "Single splitter mesh";
+mshtype: "2D with 2 cells in z-direction";
+mshpers: "Gogi+Litvinov";
+cref:    1.0;
+sref:    1.0;
+xyzref: [0.0, 0.0, 0.0];
+
+with_stdout("g.topo",
+  block([listarith: true],
+    printf(true, "~80a~%", mshtitle),
+    printf(true, "~80a~%", mshcomment),
+    printf(true, "~30a~%", mshtype),
+    printf(true, "~30a~%", mshpers),
+    printf(true, "~25,17g ~%",   cref),
+    printf(true, "~25,17g ~%",   sref),
+    printf(true, "~{~25,16g ~}~%",   xyzref),
+    printf(true, "~12d~%", nblock),
+    for iblock thru nblock do (
+      el1: part(blist, iblock),
+      printf(true, "~{~12d~}   ~a~5d~%",
+        block2n(el1)-1, "Block:", iblock),
+      printf(true, "~{~12d~}~%", apart(iblock, nwin, npbc, nbbc)),
+      printf(true, "~{~12d~}~%", mshwin[iblock]),
+      printf(true, "~{~12d~}~%", mshwbc[iblock]),
+      printf(true, "~{~12d~}~%", mshwbcfam[iblock]),
+      printf(true, "~{~12d~}~%", flatten(mshwdf[iblock])),
+      printf(true, "~{~12d~}~%", blkcon[iblock]),
+      printf(true, "~{~12d~}~%", blkfac[iblock]),
+      printf(true, "~{~12d~}~%", flatten(blkdef[iblock])),
+      printf(true, "~{~12d~}~%", flatten(blkdir[iblock])))));
+
+
+
