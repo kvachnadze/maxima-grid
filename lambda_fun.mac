@@ -36,14 +36,3 @@ lambda_diff_full(la1, ivar, d):=
 
 lambda_sum(la1, la2):=lambda_op(la1, la2, "+");
 lambda_minus(la1, la2):=lambda_op(la1, la2, "-");
-
-/*
-f: lambda([x], k*x);
-g: lambda([y], k*y*y);
-lambda_op(f, g, "+");
-lambda_repeat(f, g);
-lambda_multiply_constant(f, C);
-lambda_diff(g, 1, 2);
-lambda_op(u, g, "+");
-lambda_diff(gg);
-*/
