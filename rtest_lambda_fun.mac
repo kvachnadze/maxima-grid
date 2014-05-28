@@ -1,0 +1,32 @@
+kill(all);
+'done$
+
+(load("lambda_fun.mac"), 'done);
+'done$
+
+lambda_args( lambda([x], x^2));
+[x]$
+
+lambda_body( lambda([x], x^2));
+x^2$
+
+lambdap(f);
+false$
+
+lambdap(1);
+false$
+
+lambdap(lambda([x], x^2));
+true$
+
+block([k: 42], lambda_op( lambda([x], x), lambda([y], k*y), "+"));
+lambda([x], k*x+x)$
+
+block([k: 42], lambda_multiply_constant( lambda([x], k*x), 10));
+lambda([x],10*k*x)$
+
+lambda_repeat(lambda([x], x+a), lambda([y], y^2));
+lambda([x],x^2+a)$
+
+lambda_diff(lambda([x, y], x*y));
+lambda([x,y],y)$
