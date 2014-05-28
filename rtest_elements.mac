@@ -1,0 +1,41 @@
+kill(all);
+'done$
+
+(load("elements.mac"), 'done);
+'done$
+
+create_line(0, 0, 1, 1);
+lambda([s],[s,s])$
+
+create_line(1, 2, 3, 4);
+lambda([s],[2*s+1,2*s+2])$
+
+block([s: 42, body: 42], create_line(1, 2, 3, 4));
+lambda([s],[2*s+1,2*s+2])$
+
+create_arc([1, 1], 2, 45, 45+180);
+lambda([s],[2*cos(%pi*(180*s+45)/180)+1,2*sin(%pi*(180*s+45)/180)+1])$
+
+create_arc(0, 0, 1, 0, 180);
+lambda([s],[cos(%pi*s),sin(%pi*s)])$
+
+block([body: 42, s: 42], create_arc(0, 0, 1, 0, 180));
+lambda([s],[cos(%pi*s),sin(%pi*s)])$
+
+element_length(create_line(0, 0, 1, 1));
+sqrt(2)$
+
+element_length(create_line(0, 0, 1, 0));
+1$
+
+element_length(create_line(1, 2, 3, 4));
+2^(3/2)$
+
+element_length(create_arc([1, 1], 1, [0, 360]));
+2*%pi$
+
+element_length(create_arc([1, 2], 2, [0, 180]));
+2*%pi$
+
+block([x: 42, y: 42, body: 42, arg: 42, expr: 42], element_length(create_arc([1, 2], 2, [0, 180])));
+2*%pi$

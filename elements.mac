@@ -1,0 +1,58 @@
+load("lambda_fun.mac");
+  
+/* create parameteric line from [x1, y1] to [x2, y2]
+p: create_line(0, 0, 1, 2);
+draw2d(parametric( p(s)[1], p(s)[2], s, 0, 1));
+*/
+create_line([l]):=apply('create_line_aux, flatten(l));
+create_line_aux(x1, y1, x2, y2):= subst('body=['s*(x2-x1)+x1,'s*(y2-y1)+y1], lambda([s], body));
+
+
+/* create parameteric arc with a center [xc, yc] 
+p: create_arc( [1, 1], 2, 45, 45+180 );
+draw2d(xrange=[-3, 3], yrange=[-3, 3], parametric( p(s)[1], p(s)[2], s, 0, 1));
+*/
+create_arc([l]):=apply('create_arc_aux, flatten(l));
+create_arc_aux(xc, yc, radius, phi_start, phi_end):= subst('body=
+  block([sc: (phi_end - phi_start)*'s + phi_start],
+    [xc + radius*cos(sc/180*%pi), yc + radius*sin(sc/180*%pi)]),
+  lambda([s], body));
+
+element_length(c):= block([x, y, expr, body: lambda_body(c), arg: first(lambda_args(c))],
+  x: part(body, 1),
+  y: part(body, 2),
+  expr: sqrt(diff(x, arg)^2 + diff(y, arg)^2),
+  integrate(expr, s, 0, 1));
+
+join_elements(el1, L1, el2, L2):= block([
+  pivot: L1/(L1+L2),
+  sc1: (L1+L2)/L1,
+  sc2: (L1+L2)/L2],
+  buildq([pivot, sc1, sc2, el1, el2],
+    lambda([s], 
+      el1(sc1*s)* charfun2(s, minf, pivot) + el2( (s - pivot)*sc2) * charfun2(s, pivot, inf))));
+
+mirror_element(c):= block([l, s, x, y],
+  l: c(s),
+  if not listp(l) or length(l)#2 then error("c(s) should return a two elements list"),
+  x: first(l), y: -second(l),
+  buildq([x, y], lambda([s], [x, y])));
+
+create_par(x0, y0, x1, y1):= block([c1, c2, c3, c4],
+  c1: create_line(x1, y0, x0, y0),
+  c2: create_line(x1, y0, x1, y1),
+  c3: create_line(x1, y1, x0, y1),
+  c4: create_line(x0, y0, x0, y1),
+  [c1, c2, c3, c4]);
+
+/*
+draw_element(c):= buildq([c], gr2d(parametric( part(c(s), 1), part(c(s), 2), s, 0, 1),
+    vector(c(0), c(1/10))));
+
+draw_element(c):= buildq([c],
+    gr2d(vector([0, 0], c(0))));
+  
+x: gr2d(vector([0, 0], lambda([s], [s, s])(1)));
+draw(x);
+draw2d(vector(c(0), c(1)));
+*/
