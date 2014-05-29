@@ -1,0 +1,16 @@
+/* General list utils */
+
+maplist_append(fun, l):= block([out: []],
+  for el in l do block([res: fun(el)],
+    if listp(res) then out: append(out, res)
+    else out: endcons(res, out)),
+  out);
+
+maplist_append_when(fun, p, l):= block([out: []],
+  for el in l do
+  if p(el) then
+  block([res: fun(el)],
+    if listp(res) then out: append(out, res)
+    else out: endcons(res, out))
+  else out: endcons(el, out),
+  out);

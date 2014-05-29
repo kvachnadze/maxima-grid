@@ -1,0 +1,28 @@
+(kill(all), 'done);
+'done$
+
+(load("list_utils.mac"), 'done);
+'done$
+
+maplist_append( f, [1, 2, 3]);
+[f(1),f(2),f(3)]$
+
+ev(maplist_append(f, [1, 2, 3]), f(x):= if x=2 then [1, 2] else 10);
+[10,1,2,10]$
+
+maplist_append_when(f, lambda([el], true), [1, 2, 3]);
+[f(1),f(2),f(3)]$
+
+maplist_append_when(f, lambda([el], false), [1, 2, 3]);
+[1,2,3]$
+
+maplist_append_when(f, lambda([el], el=2), [1, 2, 3]);
+[1,f(2),3]$
+
+ev(maplist_append_when(f, lambda([el], el=2), [1, 2, 3]),
+  f(x):= if x=2 then [1, 2] else 10);
+[1,1,2,3]$
+
+ev(maplist_append_when(f, lambda([el], el=2), [[1], 2, [3]]),
+  f(x):= if x=2 then [1, 2] else 10);
+[[1],1,2,[3]]$
