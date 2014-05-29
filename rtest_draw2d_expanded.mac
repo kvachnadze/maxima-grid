@@ -1,0 +1,25 @@
+kill(all);
+'done$
+
+(load("draw2d_expanded.mac"), 'done);
+'done$
+
+draw_expanded_p(1);
+false$
+
+draw_expanded_p(el: element(1));
+true$
+
+draw_expanded_p(el: abcd(1));
+false$
+
+draw2d_expanded(1);
+draw2d(1)$
+
+draw2d_expanded(element( lambda([s], [s, s])));
+draw2d(parametric(s,s,s,0,1),vector([9/10,9/10],[1/10,1/10]),
+       vector([0,0],[1/10,1/10]))$
+
+draw2d_expanded(element( lambda([s], [s, s]), 'color='red));
+draw2d(parametric(s,s,s,0,1),color = red,vector([9/10,9/10],[1/10,1/10]),
+       vector([0,0],[1/10,1/10]))$
