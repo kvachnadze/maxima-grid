@@ -3,6 +3,12 @@ lambda_body(la):= second(args(la));
 lambdap(la):= not atom(la) and part(la, 0)='lambda;
 atom_to_lambda(la):=subst('a=gensym(), subst('body=la(a), lambda([a], body)));
 
+lambda_subst(vars, la):=
+(if not lambdap(la) then error("`la' must be a lambda"),
+  if not listp(vars) then error("`vars' must be a list"),
+  if length(vars)#length(lambda_args(la)) then error("the length of `vars' should be the same as number of arguments in `la'"),
+  psubst(maplist("=", lambda_args(la), vars), lambda_body(la)));
+
 lambda_op(la1, la2, fun):=
 (if not lambdap(la1) then la1: atom_to_lambda(la1),
   if not lambdap(la2) then la2: atom_to_lambda(la2),

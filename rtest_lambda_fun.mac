@@ -30,3 +30,12 @@ lambda([x],x^2+a)$
 
 lambda_diff(lambda([x, y], x*y));
 lambda([x,y],y)$
+
+lambda_subst([a, b], lambda([x, y], k*x + y));
+a*k+b$
+
+lambda_subst([], lambda([], k));
+k$
+
+block([k: 42], lambda_subst([a, b], lambda([x, y], k*x + y)));
+a*k+b$
