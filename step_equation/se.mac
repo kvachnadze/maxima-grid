@@ -1,0 +1,19 @@
+/* 
+dn = dX/phi(X);
+
+input:
+interval [x1, x2]
+
+
+*/
+
+assume(x0>0);
+assume(x>x0);
+eq: n = integrate(1/phi(z), z, x1, x);
+
+eq_i: ev(eq, phi(z)=dphi, integrate);
+so_i: solve(eq_i, x);
+so_n: solve(subst(so_i, x=x2), n);
+
+eq_i: ev(eq, phi(z)= log(pst)*z, integrate);
+eq_s: solve(eq_i, x);
