@@ -30,6 +30,6 @@ load("elements.mac");
 [c1, c2, c3, c4]: create_par(0, 0, 10, 10);
 draw2d_expanded(
   head_length=0.2,
-  xrange=[-1, 11], yrange=[-1, 11],
+  xrange=[-1, 2], yrange=[-1, 2],
   'color='red, element(c1), color='green, element(c2), 'color='blue, element(c3), 'color='magenta, element(c4));
 */

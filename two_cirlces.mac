@@ -1,5 +1,5 @@
 two_cirlces(rmin, rmax, [alpha]):= block([p1, p2, p3, p4, ca, cb, c1, c2, c3, c4],
-  if listp(alpha) then alpha: first(alpha) else alpha: 180,
+  if emptyp(alpha) then alpha: 180 else alpha: first(alpha),
   p2: [0  , rmin],
   p3: [rmin*cos(alpha/180*%pi), rmin*sin(alpha/180*%pi)],
   p4: [rmax*cos(alpha/180*%pi), rmax*sin(alpha/180*%pi)],

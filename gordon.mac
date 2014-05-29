@@ -1,3 +1,7 @@
+load("spline-utils.mac");
+load("integer_sequence");
+/* load("spline2.mac"); */
+
 gordon(c1, c2, c3, c4):=
 (if not_approx_equal(c1(0), c2(0)) then error("gordon: c1(0) # c2(0)"),
   if not_approx_equal(c1(1), c4(0)) then error("gordon: c1(1) # c4(0)"),
@@ -7,6 +11,101 @@ gordon(c1, c2, c3, c4):=
     (1-'v)*c1('u)+'v*c3('u)+(1-'u)*c2('v)+'u*c4('v)-
     ((1-'u)*(1-'v)*c1(0)+'u*'v*c3(1)+'u*(1-'v)*c4(0)+(1-'u)*'v*c3(0)),
   lambda([u, v], body)));
+
+gordon_extra(c1, c2, c3, c4):=
+(if not_approx_equal(c1(0), c2(0)) then error("gordon: c1(0) # c2(0)"),
+  if not_approx_equal(c1(1), c4(0)) then error("gordon: c1(1) # c4(0)"),
+  if not_approx_equal(c4(1), c3(1)) then error("gordon: c4(1) # c3(1)"),
+  if not_approx_equal(c2(1), c3(0)) then error("gordon: c2(1) # c3(0)"),
+  subst('body=
+    (1-v)*c1(u1)+v*c3(u3)+(1-u)*c2(v2)+u*c4(v4)-
+    ((1-u)*(1-v)*c1(0)+u*v*c3(1)+u*(1-v)*c4(0)+(1-u)*v*c3(0)),
+    lambda([u, v, u1, v2, u3, v4], body)));
+
+gordon_points(c1, c2, c3, c4, l1, l2, l3, l4):=
+(if not_approx_equal(c1(0), c2(0)) then error("gordon: c1(0) # c2(0)"),
+  if not_approx_equal(c1(1), c4(0)) then error("gordon: c1(1) # c4(0)"),
+  if not_approx_equal(c4(1), c3(1)) then error("gordon: c4(1) # c3(1)"),
+  if not_approx_equal(c2(1), c3(0)) then error("gordon: c2(1) # c3(0)"),
+  if not every(listp, [l1, l2, l3, l4]) then error("`l1', `l2', `l3', `l4' must be lists"),
+  if length(l1)#length(l3) then error("`l1' and `l3' must be of the same length"),
+  if length(l2)#length(l4) then error("`l2' and `l4' must be of the same length"),
+  block([nl1: list_to_zero_one(l1), nl2: list_to_zero_one(l2),
+    nl3: list_to_zero_one(l3),      nl4: list_to_zero_one(l4),
+    v_list: list_to_zero_one( makelist(i, i, 1, length(l1))),
+    u_list: list_to_zero_one( makelist(i, i, 1, length(l2))),
+    listarith: true, numer: true, out: []
+    ],
+    for i thru length(u_list) do
+    block([u: part(u_list, i),
+      u1: part(nl1, i),
+      u3: part(nl3, i)],
+      for j thru length(v_list) do
+      block([v: part(v_list, j),
+        v2: part(nl2, j),
+        v4: part(nl4, j)],
+        res: (1-v)*c1(u1)+v*c3(u3)+(1-u)*c2(v2)+u*c4(v4)-
+        ((1-u)*(1-v)*c1(0)+u*v*c3(1)+u*(1-v)*c4(0)+(1-u)*v*c3(0)),
+        out: cons(res, out))),
+    out));
+
+output_block_extra(B, u_do_lst, v_do_lst, u_up_lst, v_up_lst, [rev]):=block([u_array, v_array, q_array, u_array_do, v_array_do, u_array_up, v_array_up,
+  u, v, v_do, v_up, u_do, u_up, q, nu, nv, nq, Rx, Ry, Rz, %revx%, %revy%, %revz%,
+  q_lst: [1, 2, 3], u_lst: 1 .. length(u_do_lst), v_lst: 1 .. length(v_do_lst)],
+  if length(u_do_lst)#length(u_up_lst) then error("length(u_do_lst)#length(u_up_lst)"),
+  if length(v_do_lst)#length(v_up_lst) then error("length(v_do_lst)#length(v_up_lst)"),  
+  local(B, Bx, By, Bz),
+  setup_rev(rev),
+  define(Bx(u, v, q, u_do, v_do, u_up, v_up), create_rhs_output(Bx, float(part(B(u, v, u_do, v_do, u_up, v_up), 1)))),
+  define(By(u, v, q, u_do, v_do, u_up, v_up), create_rhs_output(By, float(part(B(u, v, u_do, v_do, u_up, v_up), 2)))),
+  define(Bz(u, v, q, u_do, v_do, u_up, v_up), create_rhs_output(Bz, 2*q)),
+  compile(Bx, By, Bz),
+  array(u_array,    flonum, length(u_lst)-1),
+  array(u_array_up, flonum, length(u_lst)-1),
+  array(u_array_do, flonum, length(u_lst)-1),  
+  array(v_array,    flonum, length(v_lst)-1),
+  array(v_array_up, flonum, length(v_lst)-1),
+  array(v_array_do, flonum, length(v_lst)-1),  
+  array(q_array,    flonum, length(q_lst)-1),
+  fillarray(u_array,    list_to_zero_one(1 .. length(u_do_lst))),
+  fillarray(u_array_up, list_to_zero_one(u_up_lst)),
+  fillarray(u_array_do, list_to_zero_one(u_do_lst)),  
+  fillarray(v_array,    list_to_zero_one(1 .. length(v_do_lst))),
+  fillarray(v_array_up, list_to_zero_one(v_up_lst)),
+  fillarray(v_array_do, list_to_zero_one(v_do_lst)),  
+  fillarray(q_array,    list_to_zero_one(1 .. length(q_lst))),
+  nu: length(u_lst),
+  nv: length(v_lst),
+  nq: length(q_lst),
+  ?meval(buildq([idx: funmake('ijk2n_rev, ['i,'j,'k, nu, nv, nq]),
+      n: nu*nv*nq],
+      (Rx: make_array(flonum, n), Ry: make_array(flonum, n), Rz: make_array(flonum, n),
+        for i: 1 thru nu do
+        block([u: u_array[i-1],  u_do: u_array_do[i-1], u_up: u_array_up[i-1], numer: true],
+          for j: 1 thru nv do
+          block([v: v_array[j-1], v_up: v_array_up[j-1], v_do: v_array_do[j-1]],
+            for k: 1 thru nq do
+            block([q: q_array[k-1], numer],
+              Rx[idx]: Bx(u, v, q, u_do, v_do, u_up, v_up),
+              Ry[idx]: By(u, v, q, u_do, v_do, u_up, v_up),
+              Rz[idx]: Bz(u, v, q, u_do, v_do, u_up, v_up))))))),
+  remarray(u_array, v_array, u_array_do, v_array_do, u_array_up, v_array_up, q_array),
+  [[Rx, Ry, Rz], [nu, nv, nq]]);
+
+/*
+blist: [Z]$
+o: openw("g.fmt");
+nblock: length(blist);
+printf(o, "~d~%", nblock);
+for bl in blist do printf(o, "~{~d ~}", block2n(bl));
+newline(o);
+for bindx thru length(blist) do block([bl: part(blist, bindx)],
+  write_data(first(block2array(bl)), o),
+  write_data(second(block2array(bl)), o),
+  write_data(third(block2array(bl)), o),
+  if bindx#length(blist) then newline(o));
+close(o);
+*/
 
 /*
 load("draw");
