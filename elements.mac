@@ -1,4 +1,8 @@
 load("lambda_fun.mac");
+load("list_utils.mac");
+
+/* from abs_integrate.mac */
+safe_op(e) := block([inflag : true], if mapatom(e) then false else op(e));
   
 /* create parameteric line from [x1, y1] to [x2, y2]
 p: create_line(0, 0, 1, 2);
@@ -29,7 +33,7 @@ join_elements(el1, L1, el2, L2):= block([body],
     'sc1=(L1+L2)/L1,
     'sc2=(L1+L2)/L2],
     'lambda_subst(['sc1*'s], el1)* charfun('s<'pivot) + 'lambda_subst([('s - 'pivot)*'sc2], el2) * charfun('s>='pivot)),
-  subst('body=ev(body, lambda_subst),
+  subst('body=ev(body, 'lambda_subst),
     lambda([s], body)));
 
 mirror_element(c):= block([l: lambda_subst(['s], c)],
@@ -44,18 +48,25 @@ create_par(x0, y0, x1, y1):= block([c1, c2, c3, c4],
   c4: create_line(x0, y0, x0, y1),
   [c1, c2, c3, c4]);
 
-/*
 load("draw");
-draw_element(c):= buildq([c], gr2d(parametric( part(c(s), 1), part(c(s), 2), s, 0, 1)));
-draw_vector(c):= block([k: 1/20, listarith: true],
-  gr2d(vector(c(1-k), c(1)-c(1-k)), vector(c(0), c(k)-c(0))));
-draw_points(c, l):= block([xy: maplist('c, l)], gr2d(points(maplist('first, xy), maplist('second, xy))));
+draw_element(c):= block([s], buildq([c], parametric( part(c(s), 1), part(c(s), 2), s, 0, 1)));
+draw_vector(c):= block([body],
+  body: subst('k=1/10,
+    [vector('c(1-k), 'c(1)-'c(1-k)), vector('c(0), 'c(k)-'c(0))]),
+  ev(body, 'c));
 
-p: draw_vector(c);
-p: gr2d(vector([0,0],lambda([x],[10,10])(1/10)))$
+expand_element(el):= block([c: first(args(el))],
+  append([draw_element(c)], rest(args(el)), draw_vector(c)));
 
-draw(append(cons(head_length=0.1, draw_element(c)), draw_vector(c), cons(point_size=5, draw_points(c, [0, 1/2]))));
+draw_elementp(el):= block([prederror: true], is(nounify(safe_op(el))=nounify('element)));
+draw2d_elements([l])::= block([nl: maplist_append_when( expand_element, draw_elementp, l)],
+    buildq([nl],
+  draw2d(splice(nl))));
 
+/*
+[c1, c2, c3, c4]: create_par(0, 0, 10, 10);
+draw2d_elements(
+  head_length=0.2,
+  xrange=[-1, 11], yrange=[-1, 11],
+  'color='red, element(c1), color='green, element(c2), 'color='blue, element(c3), 'color='magenta, element(c4));
 */
-
-draw2d(el(x));
