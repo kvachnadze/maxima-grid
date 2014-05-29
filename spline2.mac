@@ -1,18 +1,10 @@
 load("spline-utils.mac");
 load("elements.mac");
+load("gordon.mac");
 
 /*draw2d(point_size=3, points ( [p1, p2, p3] )); */
 
 /* Transfinite interpolation */
-gordon(c1, c2, c3, c4):=
-(if not_approx_equal(c1(0), c2(0)) then error("gordon: c1(0) # c2(0)"),
-  if not_approx_equal(c1(1), c4(0)) then error("gordon: c1(1) # c4(0)"),
-  if not_approx_equal(c4(1), c3(1)) then error("gordon: c4(1) # c3(1)"),
-  if not_approx_equal(c2(1), c3(0)) then error("gordon: c2(1) # c3(0)"),
-buildq([c1, c2, c3, c4],
-  lambda([u, v],
-    (1-v)*c1(u)+v*c3(u)+(1-u)*c2(v)+u*c4(v)-
-    ((1-u)*(1-v)*c1(0)+u*v*c3(1)+u*(1-v)*c4(0)+(1-u)*v*c3(0)))))$
 
 ijk2n(i, j, k, nx, ny, nz):= (i-1) + (j-1)*nx + (k-1)*nx*ny;
 

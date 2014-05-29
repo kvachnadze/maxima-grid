@@ -1,0 +1,18 @@
+gordon(c1, c2, c3, c4):=
+(if not_approx_equal(c1(0), c2(0)) then error("gordon: c1(0) # c2(0)"),
+  if not_approx_equal(c1(1), c4(0)) then error("gordon: c1(1) # c4(0)"),
+  if not_approx_equal(c4(1), c3(1)) then error("gordon: c4(1) # c3(1)"),
+  if not_approx_equal(c2(1), c3(0)) then error("gordon: c2(1) # c3(0)"),
+  subst('body=
+    (1-'v)*c1('u)+'v*c3('u)+(1-'u)*c2('v)+'u*c4('v)-
+    ((1-'u)*(1-'v)*c1(0)+'u*'v*c3(1)+'u*(1-'v)*c4(0)+(1-'u)*'v*c3(0)),
+  lambda([u, v], body)));
+
+/*
+load("draw");
+load("draw2d_expanded.mac");
+load("elements.mac");
+[c1, c2, c3, c4]: create_par(0, 0, 10, 10);
+g: gordon(c1, c2, c3, c4);
+g(0, 0);
+*/
