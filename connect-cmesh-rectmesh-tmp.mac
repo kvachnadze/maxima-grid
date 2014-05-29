@@ -24,7 +24,7 @@ phispl: replace_join(phispl)$
 phi_list: spline2points(phispl)$
 write_spline_list(phi_list, "dphi.dat");
 
-rscale: 10;
+rscale: 5;
 dmin  : 2*rmin;
 radspl: [
 [ rmin,  0.6*dmin, 0.01*rscale*dmin],
@@ -63,20 +63,19 @@ extend_to_end(o_list, d, Lend):=
 
 up_spl: append(create_list(d2*pstr^(n-1), n, 1, round(n2_fin)),
   create_list(dfin,      n, 1, round(n1_max_fin) + round(n1_max) - round(n2_fin)))$
-up_list: cumsum(up_spl)$
-up_list: extend_to_end(up_list, dfin, L);
+up_list_old: cumsum(up_spl)$
+up_list: extend_to_end(up_list_old, dfin, L);
 
 px: ev(px, numer);
 do_spl: append(create_list(d1/pstr^(n-1), n, 1, round(n1_max)),
   create_list(dmax*px^(n-1), n, 1, round(n1_max_fin)))$
 do_spl: ev(do_spl, numer)$
-do_list: cumsum(do_spl)$
-do_list: extend_to_end(do_list, dfin, L);
+do_list_old: cumsum(do_spl)$
+do_list: extend_to_end(do_list_old, dfin, L);
 
 [c1, c2, c3, c4]: create_par(0, rmin, L, rmax)$
 B2: gordon_extra(c1, c2, c3, c4)$
 R2: output_block_extra(B2, reverse(do_list), rad_list, reverse(up_list), rad_list, [false, false, true])$
-R2: output_block_extra(B2, do_list, rad_list, do_list, rad_list);
 
 [c1, c2, c3, c4]: create_par(h2, -rmin, L, -rmax);
 B3: gordon(c1, c2, c3, c4);
