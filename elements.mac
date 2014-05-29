@@ -7,8 +7,8 @@ draw2d(parametric( p(s)[1], p(s)[2], s, 0, 1));
 create_line([l]):=apply('create_line_aux, flatten(l));
 create_line_aux(x1, y1, x2, y2):= subst('body=['s*(x2-x1)+x1,'s*(y2-y1)+y1], lambda([s], body));
 
-
-/* create parameteric arc with a center [xc, yc] 
+/* create parameteric arc with a center [xc, yc]
+load("draw");
 p: create_arc( [1, 1], 2, 45, 45+180 );
 draw2d(xrange=[-3, 3], yrange=[-3, 3], parametric( p(s)[1], p(s)[2], s, 0, 1));
 */
@@ -24,19 +24,18 @@ element_length(c):= block([x, y, expr, body: lambda_body(c), arg: first(lambda_a
   expr: sqrt(diff(x, arg)^2 + diff(y, arg)^2),
   integrate(expr, s, 0, 1));
 
-join_elements(el1, L1, el2, L2):= block([
-  pivot: L1/(L1+L2),
-  sc1: (L1+L2)/L1,
-  sc2: (L1+L2)/L2],
-  buildq([pivot, sc1, sc2, el1, el2],
-    lambda([s], 
-      el1(sc1*s)* charfun2(s, minf, pivot) + el2( (s - pivot)*sc2) * charfun2(s, pivot, inf))));
+join_elements(el1, L1, el2, L2):= block([body],
+  body: psubst(['pivot=L1/(L1+L2),
+    'sc1=(L1+L2)/L1,
+    'sc2=(L1+L2)/L2],
+    'lambda_subst(['sc1*'s], el1)* charfun('s<'pivot) + 'lambda_subst([('s - 'pivot)*'sc2], el2) * charfun('s>='pivot)),
+  subst('body=ev(body, lambda_subst),
+    lambda([s], body)));
 
-mirror_element(c):= block([l, s, x, y],
-  l: c(s),
+mirror_element(c):= block([l: lambda_subst(['s], c)],
   if not listp(l) or length(l)#2 then error("c(s) should return a two elements list"),
-  x: first(l), y: -second(l),
-  buildq([x, y], lambda([s], [x, y])));
+  psubst(['x=first(l), 'y=-second(l)],
+    lambda([s], [x, y])));
 
 create_par(x0, y0, x1, y1):= block([c1, c2, c3, c4],
   c1: create_line(x1, y0, x0, y0),
@@ -46,13 +45,17 @@ create_par(x0, y0, x1, y1):= block([c1, c2, c3, c4],
   [c1, c2, c3, c4]);
 
 /*
-draw_element(c):= buildq([c], gr2d(parametric( part(c(s), 1), part(c(s), 2), s, 0, 1),
-    vector(c(0), c(1/10))));
+load("draw");
+draw_element(c):= buildq([c], gr2d(parametric( part(c(s), 1), part(c(s), 2), s, 0, 1)));
+draw_vector(c):= block([k: 1/20, listarith: true],
+  gr2d(vector(c(1-k), c(1)-c(1-k)), vector(c(0), c(k)-c(0))));
+draw_points(c, l):= block([xy: maplist('c, l)], gr2d(points(maplist('first, xy), maplist('second, xy))));
 
-draw_element(c):= buildq([c],
-    gr2d(vector([0, 0], c(0))));
-  
-x: gr2d(vector([0, 0], lambda([s], [s, s])(1)));
-draw(x);
-draw2d(vector(c(0), c(1)));
+p: draw_vector(c);
+p: gr2d(vector([0,0],lambda([x],[10,10])(1/10)))$
+
+draw(append(cons(head_length=0.1, draw_element(c)), draw_vector(c), cons(point_size=5, draw_points(c, [0, 1/2]))));
+
 */
+
+draw2d(el(x));
