@@ -12,6 +12,34 @@ gordon(c1, c2, c3, c4):=
     ((1-'u)*(1-'v)*c1(0)+'u*'v*c3(1)+'u*(1-'v)*c4(0)+(1-'u)*'v*c3(0)),
   lambda([u, v], body)));
 
+output_block(B, c1lst, c2lst, [rev]):=block([lst1, lst2, lst3, u, v, q, nu, nv, nq, Rx, Ry, Rz, %revx%, %revy%, %revz%,
+  c3lst: [1, 2, 3]],
+  local(B, Bx, By, Bz),
+  setup_rev(rev),
+  define(Bx(u, v, q), create_rhs_output(Bx, float(part(B(u, v), 1)))),
+  define(By(u, v, q), create_rhs_output(By, float(part(B(u, v), 2)))),
+  define(Bz(u, v, q), create_rhs_output(Bz, 2*q)),
+  compile(Bx, By, Bz, ijk2n_rev),
+  array(lst1, flonum, length(c1lst)-1),
+  array(lst2, flonum, length(c2lst)-1),
+  array(lst3, flonum, length(c3lst)-1),
+  fillarray(lst1, list_to_zero_one(c1lst)),
+  fillarray(lst2, list_to_zero_one(c2lst)),
+  fillarray(lst3, list_to_zero_one(c3lst)),
+  nu: length(c1lst),
+  nv: length(c2lst),
+  nq: length(c3lst),
+  ?meval(buildq([idx: funmake('ijk2n_rev, ['i,'j,'k, nu, nv, nq]),
+      n: nu*nv*nq],
+    (Rx: make_array(flonum, n), Ry: make_array(flonum, n), Rz: make_array(flonum, n),
+    for i: 1 thru nu do
+    for j: 1 thru nv do
+    for k: 1 thru nq do
+    block([u: lst1[i-1], v: lst2[j-1], q: lst3[k-1]],
+      Rx[idx]: float(Bx(u, v, q)), Ry[idx]: float(By(u, v, q)), Rz[idx]: float(Bz(u, v, q)))))),
+  remarray(lst1, lst2, lst3),
+   [[Rx, Ry, Rz], [nu, nv, nq]]);
+
 gordon_extra(c1, c2, c3, c4):=
 (if not_approx_equal(c1(0), c2(0)) then error("gordon: c1(0) # c2(0)"),
   if not_approx_equal(c1(1), c4(0)) then error("gordon: c1(1) # c4(0)"),
