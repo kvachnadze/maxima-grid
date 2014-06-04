@@ -5,6 +5,7 @@ load("write-list-lowlevel.lisp");
 load("spline2.mac");
 load("two_cirlces.mac");
 load("lambda_fun.mac");
+load("se_special.mac");
 
 load("integer_sequence");
 k_rescale: 0.31116308;
@@ -44,37 +45,12 @@ d2: first(blockijk2xyz_withcode(R1a,  [1, 'max, 1])) - first(blockijk2xyz_withco
 dfin: (8*d1+2*d2)/10;
 dmax: 8/10*d2;
 
-n2_fin: rhs(first(ev(solve(d2*pstr^('n-1) = dfin, 'n), numer)));
-n1_max: rhs(first(ev(solve(d1/pstr^('n-1) = dmax, 'n), numer)));
+[up_list, do_list]: se_special(0, d1, d2, pstr, dfin, dmax)$
+draw2d( points_joined=true, point_size=4, points(up_list), 'color='red, points(do_list));
 
-declare(n1_max_fin, integer);
-px: rhs(first(solve( dmax*'px^('n1_max_fin-1) = dfin, 'px)));
-L1: sum(d1*pstr^(n-1), n, 1, n1_max) + sum( dmax*px^(n-1), n, 1, 'n1_max_fin);
-L2: sum(d1*(1/pstr)^(n-1), n, 1, n2_fin) + ('n1_max_fin + n1_max - n2_fin)*dfin;
-
-n1_max_fin: 2;
-do if ev(L1-L2, sum)>0 then return(n1_max_fin) else n1_max_fin: n1_max_fin + 1;
-Lr: ev(L2, sum, numer);
-
-extend_to_end(o_list, d, Lend):=
-(if not listp(o_list) then error("`o_list' should be a list"),
-  if Lend<last(o_list) then error("Lend should be smaller than `last(o_list)'"),
-  append(o_list, spline2points([[ last(o_list)+d, Lend, dfin]])));
-
-up_spl: append(create_list(d2*pstr^(n-1), n, 1, round(n2_fin)),
-  create_list(dfin,      n, 1, round(n1_max_fin) + round(n1_max) - round(n2_fin)))$
-up_list_old: cumsum(up_spl)$
-up_list: extend_to_end(up_list_old, dfin, L);
-
-px: ev(px, numer);
-do_spl: append(create_list(d1/pstr^(n-1), n, 1, round(n1_max)),
-  create_list(dmax*px^(n-1), n, 1, round(n1_max_fin)))$
-do_spl: ev(do_spl, numer)$
-do_list_old: cumsum(do_spl)$
-do_list: extend_to_end(do_list_old, dfin, L);
-
-[c1, c2, c3, c4]: create_par(0, rmin, L, rmax)$
+[c1, c2, c3, c4]: create_par(0, rmin, last(up_list), rmax)$
 B2: gordon_extra(c1, c2, c3, c4)$
+/* R2: output_block_extra(B2, reverse(do_list), rad_list, reverse(up_list), rad_list, [false, false, true])$ */
 R2: output_block_extra(B2, reverse(do_list), rad_list, reverse(up_list), rad_list, [false, false, true])$
 
 [c1, c2, c3, c4]: create_par(h2, -rmin, L, -rmax);
@@ -147,7 +123,8 @@ draw2d(xrange=[-rmax, 1.1*H], yrange=[-rmax, H],
   color='magenta, pxy(R5),
   color='violet, pxy(R6),
   line_width = 3,
-  head_length = 0.1, color='black, vlistx, color='red, vlisty);
+  head_length = 0.1,
+  color='black, vlistx, color='red, vlisty);
 
 o: openw("g.fmt");
 nblock: length(blist);

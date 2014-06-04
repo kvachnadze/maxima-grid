@@ -62,6 +62,9 @@ change_scale(x1, x2, y1, y2)::=block([x], buildq([body: (x - x1)/(x2-x1)*(y2-y1)
 list_to_zero_one(lst)::= buildq([lst],
   maplist(change_scale(first(lst), last(lst), 0, 1), lst));
 
+list_to_x1x2(lst, x1, x2)::= buildq([lst, x1, x2],
+  maplist(change_scale(first(lst), last(lst), x1, x2), lst));
+
 linspace(a, b, n):= block([h: (b-a)/(n-1)], makelist( a + h*i, i, 0, n-1));
 lspline(x, l):= block([y: list_to_zero_one(l)],
   psubst('body=block([z], sum(block([x1: part(x, i), x2: part(x, i+1), y1: part(y, i), y2: part(y, i+1)],

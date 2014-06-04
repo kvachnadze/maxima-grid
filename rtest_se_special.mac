@@ -1,0 +1,12 @@
+(kill(all), 'done);
+'done$
+
+(load("se_special.mac"), 'done);
+'done$
+
+block([spl_up, spl_do],
+  [spl_up, spl_do]: se_special(0, 0.002916983511342999, 0.04375475267014498, 0.95, 0.01108453734310339, 0.03062832686910149),
+  [maplist('second, [spl_do, spl_up]), maplist('second, [reverse(spl_do), reverse(spl_up)])]);
+[[0.003231894066768905,0.04089959302151577],
+ [1.224800920962624,1.224418115924457]]$
+

@@ -1,30 +1,41 @@
-load("se.mac");
 load("spline-utils.mac");
+load("se.mac");
 
+se_special(x0, d1, d2, pstr, dfin, dmax):= block([l_up, s_up, nend, l_do, s_do, spl_up, spl_do, n2x_sol],
+  if not pstr<=1 then error("`pstr' should be <= 1"),
+  if not d2>=d1 then error("`d2' should >= `d1'"),
+  if not dfin>=d1 then error("`dfin' should >= `d1'"),
+  local(spl_up, spl_do, s_up, s_do),
+  l_up: [[0,  'und, pstr, d2, dfin, x0, 'und], ['und, n2x, 1, 'und, 'und, 'und, 'und]],
+  s_up: ev(l_up, transform_str_aux, transform_str_forward, infeval),
+  nend: s_up[2][2],
+  
+  l_do: [[0,  'und, 1/pstr, d1, dmax, x0, 'und], ['und, nend, 'und, 'und, dfin, 'und, 'und]],
+  s_do: ev(l_do, transform_str_aux, transform_str_forward, infeval),
+
+  n2x_sol: round(find_root(  s_up[2][7] = s_do[2][7], n2x, 0, 1e12)),
+
+  spl_up: transform_str_generate( subst('n2x=n2x_sol, s_up) ),
+  spl_do: transform_str_generate( subst('n2x=n2x_sol, s_do) ),
+
+/*  spl_up[1]: list_to_x1x2( spl_up[1], x0, last(spl_up[1])),
+  spl_do[1]: list_to_x1x2( spl_do[1], x0, last(spl_up[1])),
+  */
+  [spl_up[1], spl_do[1]]);
+
+/*
 pstr:  0.95;
 dfin: 0.01108453734310339;
 d1:   0.002916983511342999;
 d2:   0.04375475267014498;
 dmax: 0.03062832686910149;
-x0: 10;
-/* se_special(x0, d1, d2, pstr, dfin, dmax):= */
+x0: 0;
 
-l_up: [[0,  'und, pstr, d2, dfin, x0, 'und], ['und, n2x, 1, 'und, 'und, 'und, 'und]];
-s_up: ev(l_up, transform_str_aux, transform_str_forward, infeval);
-nend: s_up[2][2];
+load("se_special.mac");
+[spl_up, spl_do]: se_special(x0, d1, d2, pstr, dfin, dmax);
 
-l_do: [[0,  'und, 1/pstr, d1, dmax, x0, 'und], ['und, nend, 'und, 'und, dfin, 'und, 'und]];
-s_do: ev(l_do, transform_str_aux, transform_str_forward, infeval);
-
-n2x_sol: round(find_root(  s_up[2][7] = s_do[2][7], n2x, 0, 1e12));
-
-spl_up: transform_str_generate( subst('n2x=n2x_sol, s_up) );
-spl_do: transform_str_generate( subst('n2x=n2x_sol, s_do) );
-
-spl_up: change_scale( first(spl_up), last(spl_up), x0, last(spl_up));
-spl_do: change_scale( first(spl_do), last(spl_do), x0, last(spl_up));
+[spl_up, spl_do]: se_special(x0, d1, pstr, d2, dfin, dmax);
 
 load("draw");
-draw2d( points_joined=true, point_size=4, points(first(spl_up), second(spl_up)),
-  'color='red,
-  points(first(spl_do), second(spl_do)));
+draw2d( points_joined=true, point_size=4, points(spl_up), 'color='red, points(spl_do));
+*/
