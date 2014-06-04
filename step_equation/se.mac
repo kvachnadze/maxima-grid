@@ -7,6 +7,7 @@ interval [x1, x2]
 
 */
 
+/*
 assume(x0>0);
 assume(x>x0);
 eq: n = integrate(1/phi(z), z, x1, x);
@@ -17,3 +18,100 @@ so_n: solve(subst(so_i, x=x2), n);
 
 eq_i: ev(eq, phi(z)= log(pst)*z, integrate);
 eq_s: solve(eq_i, x);
+
+*/
+
+kill(all);
+/*
+pstr:  0.95;
+dfin: 0.01108453734310339;
+d1:   0.002916983511342999;
+d2:   0.04375475267014498;
+
+dmax: 8/10*d2;
+*/
+
+/*
+[[n1, n2, str, d1, d2, x1, x2],
+ [n1, n2, str, d1, d2, x1, x2]]
+*/
+annotated(l):= maplist("=", ['n1, 'n2, 'str, 'd1, 'd2, 'x1, 'x2], l);
+
+assume(n2>n1);
+declare([n1, n2], integer);
+%rels%: ['d2='d1*'str^('n2-'n1),
+         'x2 = 'x1 + block([simpsum: true], 'sum('d1*str^(n-'n1), n, 'n1+1, 'n2))];
+block([n1, n2, str, d1, d2, x1, x2],
+  solve(%rels%, ['d2, 'n2]));
+         
+defp(el):= is(el#'und);
+transform_str_aux(l):= block([
+  n1: part(l, 1),
+  n2: part(l, 2),
+  str: part(l, 3),
+  d1: part(l, 4),
+  d2: part(l, 5),
+  x1: part(l, 6),
+  x2: part(l, 7)],
+  if d2='und and every(defp, [n1, n2, str, d1]) then d2: d1*str^(n2 - n1),
+  if d1='und and every(defp, [n1, n2, str, d2]) then d1: d2*str^(n1 - n2),  
+  if x2='und and every(defp, [n1, n2, str, d1]) then x2: block([simpsum: true],
+    x1 + sum(d1*str^('n - n1), n, n1+1, n2)),
+  if x1='und and every(defp, [n1, n2, str, d2]) then x1: block([simpsum: true],
+    (str^n2*x2-d2*str^n1*sum(str^(n-n1),n,n1+1,n2))/str^n2),
+  if str='und and every(defp, [n1, n2, d1, d2]) then str: (d2/d1)^(1/(n2-n1)),
+  [n1, n2, str, d1, d2, x1, x2]);
+
+upif(A, B)::= buildq([A, B], if A#'und  then error("upif: A#'und") else A: B);
+transform_str_forward(l):=block([ln: copylist(l)], local(ln),
+  for i: 2 thru length(l) do (upif(ln[i][1], l[i-1][2]), upif(ln[i][3], l[i-1][4])),
+  ln);
+
+transform_str_forward([[0, 1, 1, 1, 10, 0, 10], ['und, 1, 'und, 2, 10, 0, 10]]);
+
+/* [n1, n2, str, d1, d2, x1, x2] */
+l: [0, n2_fin, pstr, d1, 'und, L1, 'und];
+annotated(l);
+transform_str_aux(l);
+
+annotated(transform_str_aux([0, n2, k, 1, 'und, 0, 'und]));
+
+
+n2_fin: rhs(first(ev(solve(d2*pstr^('n-1) = dfin, 'n), numer)));
+n1_max: rhs(first(ev(solve(d1/pstr^('n-1) = dmax, 'n), numer)));
+
+declare(n1_max_fin, integer);
+px: rhs(first(solve( dmax*'px^('n1_max_fin-1) = dfin, 'px)));
+
+block([simpsum: true],
+  L1: sum(d1*pstr^(n-1), n, 1, n1_max) + sum( dmax*px^(n-1), n, 1, 'n1_max_fin),
+  L2: sum(d1*(1/pstr)^(n-1), n, 1, n2_fin) + ('n1_max_fin + n1_max - n2_fin)*dfin);
+
+n1_max_fin: find_root(L1-L2, 'n1_max_fin, 2, 100000);
+Lr: ev(L2, numer);
+
+round([n1_max_fin, n1_max]);
+round([n2_fin]);
+
+extend_to_end(o_list, d, Lend):=
+(if not listp(o_list) then error("`o_list' should be a list"),
+  if Lend<last(o_list) then error("Lend should be smaller than `last(o_list)'"),
+  append(o_list, spline2points([[ last(o_list)+d, Lend, dfin]])));
+
+up_spl: append(create_list(d2*pstr^(n-1), n, 1, round(n2_fin)),
+  create_list(dfin,      n, 1, round(n1_max_fin) + round(n1_max) - round(n2_fin)))$
+up_list_old: cumsum(up_spl)$
+up_list: extend_to_end(up_list_old, dfin, L);
+
+px: ev(px, numer);
+do_spl: append(create_list(d1/pstr^(n-1), n, 1, round(n1_max)),
+  create_list(dmax*px^(n-1), n, 1, round(n1_max_fin)))$
+do_spl: ev(do_spl, numer)$
+do_list_old: cumsum(do_spl)$
+do_list: extend_to_end(do_list_old, dfin, L);
+
+
+load("draw");
+draw2d( points(do_list_old), 'color='red, points(up_list_old));
+
+draw2d( points(do_list), 'color='red, points(up_list));
