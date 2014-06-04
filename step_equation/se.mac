@@ -1,36 +1,3 @@
-/* 
-dn = dX/phi(X);
-
-input:
-interval [x1, x2]
-
-
-*/
-
-/*
-assume(x0>0);
-assume(x>x0);
-eq: n = integrate(1/phi(z), z, x1, x);
-
-eq_i: ev(eq, phi(z)=dphi, integrate);
-so_i: solve(eq_i, x);
-so_n: solve(subst(so_i, x=x2), n);
-
-eq_i: ev(eq, phi(z)= log(pst)*z, integrate);
-eq_s: solve(eq_i, x);
-
-*/
-
-kill(all);
-
-/*
-pstr:  0.95;
-dfin: 0.01108453734310339;
-d1:   0.002916983511342999;
-d2:   0.04375475267014498;
-
-dmax: 8/10*d2;
-*/
 
 /*
 [[n1, n2, str, d1, d2, x1, x2],
@@ -40,16 +7,7 @@ dmax: 8/10*d2;
 annotated(l):= if listp(l) and listp(first(l)) then  maplist('annotated_one, l) else annotated_one(l);
 annotated_one(l):= maplist("=", ['n1, 'n2, 'str, 'd1, 'd2, 'x1, 'x2], l);
 
-/*
-assume(n2>n1);
-declare([n1, n2], integer);
-%rels%: ['d2='d1*'str^('n2-'n1),
-         'x2 = 'x1 + block([simpsum: true], 'sum('d1*str^(n-'n1), n, 'n1+1, 'n2))];
-block([n1, n2, str, d1, d2, x1, x2],
-  solve(%rels%, ['d2, 'n2]));
-*/
-         
-defp(el):= is(el#'und);
+transform_defp(el):= is(el#'und);
 transform_str_aux(l):=if listp(first(l)) then maplist('transform_str_aux_one, l) else transform_str_aux_one(l);
 transform_str_aux_one(l):= block([str_old,
   n1: part(l, 1),
@@ -59,35 +17,27 @@ transform_str_aux_one(l):= block([str_old,
   d2: part(l, 5),
   x1: part(l, 6),
   x2: part(l, 7)],
-  if d2='und and str=1 and every(defp, [d1]) then d2: d1,
-  if d1='und and str=1 and every(defp, [d2]) then d1: d2,
-  if d2='und and every(defp, [n1, n2, str, d1]) then d2: d1*str^(n2 - n1),
-  if d1='und and every(defp, [n1, n2, str, d2]) then d1: d2*str^(n1 - n2),  
-  if x2='und and every(defp, [n1, n2, str, d1, x1]) then x2: block([simpsum: true],
-    x1 + sum(d1*str^('n - n1), n, n1+1, n2)),
-  if x1='und and every(defp, [n1, n2, str, d2, x2]) then x1: block([simpsum: true],
-    (str^n2*x2-d2*str^n1*sum(str^(n-n1),n,n1+1,n2))/str^n2),
-  if str='und and every(defp, [n1, n2, d1, d2]) then str: (d2/d1)^(1/(n2-n1)),
-  if n2='und and str#1 and d1#d2 and every(defp, [n1, str, d1, d2]) then (
+  if n2='und and str#1 and d1#d2 and every(transform_defp, [n1, str, d1, d2]) then (
     n2: round((n1*log(str)+log(d2/d1))/log(str)),
     str_old: str,
     str: (d2/d1)^(1/(n2-n1)),
     if str#str_old then print("warning: changing `str'")),
-  if n2='und and str=1 and d1=d2 and every(defp, [x1, x2]) then (
+  if n2='und and str=1 and d1=d2 and every(transform_defp, [x1, x2, d1, d2]) then (
     n2: round((x2-x1+d1*n1)/d1),
     d1_old: d1,
     d1: (x2-x1)/(n2-n1),
     d2: d1,
     if d1#d1_old then print("warning: changing `d1' and `d2'")),
+  if d2='und and str=1 and every(transform_defp, [d1]) then d2: d1,
+  if d1='und and str=1 and every(transform_defp, [d2]) then d1: d2,
+  if d2='und and str#1 and every(transform_defp, [n1, n2, str, d1]) then d2: d1*str^(n2 - n1),
+  if d1='und and str#1 and every(transform_defp, [n1, n2, str, d2]) then d1: d2*str^(n1 - n2),
+  if x2='und and every(transform_defp, [n1, n2, str, d1, x1]) then x2: block([simpsum: true],
+    x1 + sum(d1*str^('n - n1), n, n1+1, n2)),
+  if x1='und and every(transform_defp, [n1, n2, str, d2, x2]) then x1: block([simpsum: true],
+    (str^n2*x2-d2*str^n1*sum(str^(n-n1),n,n1+1,n2))/str^n2),
+  if str='und and every(transform_defp, [n1, n2, d1, d2]) then str: (d2/d1)^(1/(n2-n1)),
   [n1, n2, str, d1, d2, x1, x2]);
-
-l: transform_str_aux_one(transform_str_aux_one([0, 'und, 1.1, 1, 500, 1, 'und]));
-transform_str_generate(l);
-draw2d( points_joined=true, point_size=4, points(first(%), second(%)) );
-
-l: transform_str_aux_one(transform_str_aux_one([0, 'und, 2, 1, 1, 0, 5.5]));
-transform_str_generate(l);
-
 
 /*
 
@@ -96,17 +46,17 @@ A: B
 if A='und
 
 A: 'und;
-upif(A , B);
+transform_upif(A , B);
 
 (%i2) A: 'und;
 (%o2)                                 und
-(%i3) upif(A , B);
+(%i3) transform_upif(A , B);
 (%o3)                                  B
 (%i4) A;
 (%o4)                                  B
 
 */
-upif(A, B)::= buildq([A, B], if A='und and B#'und then A: B else print("upif warning: A is not equal to 'und"));
+transform_upif(A, B)::= buildq([A, B], if A='und and B#'und then A: B else print("transform_upif warning: A is not equal to 'und"));
 
 /*
 [n1, n2, str, d1, d2, x1, x2]
@@ -114,29 +64,15 @@ upif(A, B)::= buildq([A, B], if A='und and B#'und then A: B else print("upif war
 transform_str_forward(l):=block([ln: copylist(l)], local(ln, l),
   for i: 2 thru length(l) do (
     /* update `n1' */
-    upif(ln[i][1], l[i-1][2]),
+    transform_upif(ln[i][1], l[i-1][2]),
     /* update `d1' */
-    upif(ln[i][4], l[i-1][5]),
+    transform_upif(ln[i][4], l[i-1][5]),
     /* update `x1' */
-    upif(ln[i][6], l[i-1][7])
+    transform_upif(ln[i][6], l[i-1][7])
     ),
   ln);
 
-transform_str_forward([[n1, n2, str, d1, d2, x1, x2], ['und, 1, str, 'und, 10, 'und, 10]]);
-
-
 /* [n1, n2, str, d1, d2, x1, x2] */
-l: [0, n2_fin, pstr, d1, 'und, L1, 'und];
-annotated(l);
-transform_str_aux(l);
-
-transform_str_aux([0, 2, 1/2,  1, 'und, 0, 'und]);
-annotated(%);
-transform_str_aux([0, n2, k, 1, 'und, 0, 'und]);
-
-l: [ [[1, 2], [10, 20], [100, 200]]     ,   [[3, 4], [30, 40], [300, 400]]  ];
-apply('maplist, cons('append, l));
-
 transform_str_generate(l):= if listp(first(l)) then
 block([res: maplist('transform_str_generate_one, l)],
   apply('maplist, cons('append, res))) else transform_str_generate_one(l);
@@ -147,6 +83,8 @@ transform_str_generate_one(l):=block([n, x_list, str_list,
   str: part(l, 3),
   d1: part(l, 4),
   x1: part(l, 6)],
+  if not integerp(n1) then error("error: `n1' should be an integer"),
+  if not integerp(n2) then error("error: `n1' should be an integer"),
   if str#1 then
   x_list: create_list( x1+d1*(str^(n+1)-str^(n1+1))/((str-1)*str^n1), n, n1+1, n2)
   else
@@ -155,74 +93,3 @@ transform_str_generate_one(l):=block([n, x_list, str_list,
   [x_list, str_list]);
 
 declare([transform_str_aux, transform_str_forward], evfun);
-load("draw");
-/* l: [[0, 10, 1/2, 1, 'und, 0, 'und], ['und, 20, 2, 'und, 'und, 'und, 10]];*/
-l: [[0, 5, 1, 1, 'und, 0, 'und], ['und, 10, 2, 'und, 'und, 'und, 'und], ['und, 15, 1/2, 'und, 'und, 'und, 'und]];
-annotated(l);
-s: ev(l, transform_str_aux, transform_str_forward, infeval);
-transform_str_generate(s);
-draw2d( points_joined=true, point_size=4, points(first(%), second(%)) );
-
-pstr:  0.95;
-dfin: 0.01108453734310339;
-d1:   0.002916983511342999;
-d2:   0.04375475267014498;
-dmax: 7/10*d2;
-Lmax:    1.71139694;
-
-/* [n1, n2, str, d1, d2, x1, x2] */
-l_up: [[0,  'und, pstr, d2, dfin, 0, 'und], ['und, n2x, 1, 'und, 'und, 'und, 'und]];
-s_up: ev(l_up, transform_str_aux, transform_str_forward, infeval);
-nend: s_up[2][2];
-
-l_do: [[0,  'und, 1/pstr, d1, dmax, 0, 'und], ['und, nend, 'und, 'und, dfin, 'und, 'und]];
-s_do: ev(l_do, transform_str_aux, transform_str_forward, infeval);
-
-n2x_sol: find_root(  s_up[2][7] = s_do[2][7], n2x, 0, 1e10);
-
-spl_up: transform_str_generate( subst('n2x=n2x_sol, s_up) );
-spl_do: transform_str_generate( subst('n2x=n2x_sol, s_do) );
-
-draw2d( points_joined=true, point_size=4, points(first(spl_up), second(spl_up)),
-  'color='red,
-  points(first(spl_do), second(spl_do)));
-
-
-n2_fin: rhs(first(ev(solve(d2*pstr^('n-1) = dfin, 'n), numer)));
-n1_max: rhs(first(ev(solve(d1/pstr^('n-1) = dmax, 'n), numer)));
-
-declare(n1_max_fin, integer);
-px: rhs(first(solve( dmax*'px^('n1_max_fin-1) = dfin, 'px)));
-
-block([simpsum: true],
-  L1: sum(d1*pstr^(n-1), n, 1, n1_max) + sum( dmax*px^(n-1), n, 1, 'n1_max_fin),
-  L2: sum(d1*(1/pstr)^(n-1), n, 1, n2_fin) + ('n1_max_fin + n1_max - n2_fin)*dfin);
-
-n1_max_fin: find_root(L1-L2, 'n1_max_fin, 2, 100000);
-Lr: ev(L2, numer);
-
-round([n1_max_fin, n1_max]);
-round([n2_fin]);
-
-extend_to_end(o_list, d, Lend):=
-(if not listp(o_list) then error("`o_list' should be a list"),
-  if Lend<last(o_list) then error("Lend should be smaller than `last(o_list)'"),
-  append(o_list, spline2points([[ last(o_list)+d, Lend, dfin]])));
-
-up_spl: append(create_list(d2*pstr^(n-1), n, 1, round(n2_fin)),
-  create_list(dfin,      n, 1, round(n1_max_fin) + round(n1_max) - round(n2_fin)))$
-up_list_old: cumsum(up_spl)$
-up_list: extend_to_end(up_list_old, dfin, L);
-
-px: ev(px, numer);
-do_spl: append(create_list(d1/pstr^(n-1), n, 1, round(n1_max)),
-  create_list(dmax*px^(n-1), n, 1, round(n1_max_fin)))$
-do_spl: ev(do_spl, numer)$
-do_list_old: cumsum(do_spl)$
-do_list: extend_to_end(do_list_old, dfin, L);
-
-
-load("draw");
-draw2d( points(do_list_old), 'color='red, points(up_list_old));
-
-draw2d( points(do_list), 'color='red, points(up_list));

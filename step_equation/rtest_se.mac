@@ -1,0 +1,50 @@
+(kill(all), 'done);
+'done$
+
+(load("se.mac"), 'done);
+'done$
+
+transform_str_aux([n1, n2, 1, d1, 'und, x1, x2]);
+[n1,n2,1,d1,d1,x1,x2]$
+
+transform_str_aux([n1, n2, 1, 'und, d2, x1, x2]);
+[n1,n2,1,d2,d2,x1,x2]$
+
+transform_str_aux([n1, n2, str, d1, 'und, x1, x2]);
+[n1,n2,str,d1,d1*str^(n2-n1),x1,x2]$
+
+transform_str_aux([n1, n2, str, 'und, d2, x1, x2]);
+[n1,n2,str,d2*str^(n1-n2),d2,x1,x2]$
+
+transform_str_aux([n1, n2, str, d1, d2, x1, 'und]);
+[n1,n2,str,d1,d2,x1,x1+d1*(str^(n2+1)-str^(n1+1))/((str-1)*str^n1)]$
+
+transform_str_aux([n1, n2, 1, d1, d2, x1, 'und]);
+[n1,n2,1,d1,d2,x1,x1+d1*(n2-n1)]$
+
+transform_str_aux([n1, n2, 1, d1, d2, 'und, x1]);
+[n1,n2,1,d1,d2,x1-d2*(n2-n1),x1]$
+
+transform_str_aux([n1, n2, 'und, d1, d2, x1, x2]);
+[n1,n2,(d2/d1)^(1/(n2-n1)),d1,d2,x1,x2]$
+
+transform_str_aux([0, 'und, 2, 1, 16, x1, x2]);
+[0,4,2,1,16,x1,x2]$
+
+transform_str_aux([0, 'und, 1, 1, 1, x1, x2]);
+[0,'round(x2-x1),1,(x2-x1)/'round(x2-x1),(x2-x1)/'round(x2-x1),x1,x2]$
+
+transform_str_forward( [ [n1, n2, str, d1, d2, x1, x2], ['und, n2_n, str_n, d1_n, d2_n, x1_n, x2_n] ]);
+[[n1,n2,str,d1,d2,x1,x2],[n2,n2_n,str_n,d1_n,d2_n,x1_n,x2_n]]$
+
+transform_str_forward( [ [n1, n2, str, d1, d2, x1, x2], ['und, n2_n, str_n, 'und, d2_n, x1_n, x2_n] ]);
+[[n1,n2,str,d1,d2,x1,x2],[n2,n2_n,str_n,d2,d2_n,x1_n,x2_n]]$
+
+transform_str_forward( [ [n1, n2, str, d1, d2, x1, x2], ['und, n2_n, str_n, 'und, d2_n, 'und, x2_n] ]);
+[[n1, n2, str, d1, d2, x1, x2], [n2, n2_n, str_n, d2, d2_n, x2, x2_n]]$
+
+transform_str_generate ( [0, 2, 1, d1, d2, 0, x2] );
+[[d1,2*d1],[d1,d1]]$
+
+transform_str_generate ( [0, 2, 1/2, 1, d2, 0, x2] );
+[[1/2,3/4],[1/2,1/4]]$
