@@ -21,13 +21,13 @@ transform_str_aux_one(l):= block([str_old,
     n2: round((n1*log(str)+log(d2/d1))/log(str)),
     str_old: str,
     str: (d2/d1)^(1/(n2-n1)),
-    if str#str_old then print("warning: changing `str'")),
+    if str#str_old then dprint("warning: changing `str'")),
   if n2='und and str=1 and d1=d2 and every(transform_defp, [x1, x2, d1, d2]) then (
     n2: round((x2-x1+d1*n1)/d1),
     d1_old: d1,
     d1: (x2-x1)/(n2-n1),
     d2: d1,
-    if d1#d1_old then print("warning: changing `d1' and `d2'")),
+    if d1#d1_old then dprint("warning: changing `d1' and `d2'")),
   if d2='und and str=1 and every(transform_defp, [d1]) then d2: d1,
   if d1='und and str=1 and every(transform_defp, [d2]) then d1: d2,
   if d2='und and str#1 and every(transform_defp, [n1, n2, str, d1]) then d2: d1*str^(n2 - n1),
@@ -56,7 +56,8 @@ transform_upif(A , B);
 (%o4)                                  B
 
 */
-transform_upif(A, B)::= buildq([A, B], if A='und and B#'und then A: B else print("transform_upif warning: A is not equal to 'und"));
+dprint([l])::= buildq([l], if is(%se_debug%=true) then print(splice(l)) else 'done);
+transform_upif(A, B)::= buildq([A, B], if A='und and B#'und then A: B else dprint("transform_upif warning: A is not equal to 'und"));
 
 /*
 [n1, n2, str, d1, d2, x1, x2]
