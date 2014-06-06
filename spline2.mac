@@ -1,6 +1,6 @@
 load("spline-utils.mac");
 load("elements.mac");
-load("gordon.mac");
+/*load("gordon.mac"); */
 
 /*draw2d(point_size=3, points ( [p1, p2, p3] )); */
 
@@ -16,6 +16,24 @@ n2ijk(n      , nx, ny, nz):= block([i, j, k],
 
 block2n(R):=second(R);
 block2array(R):=first(R);
+block_has_bc(R):=if length(R)>=3 then true else false;
+block2bc(R):= (if length(R)<3 then error("block does not have boundary conditions"),
+third(R));
+block_set_bc(R, bc):= block([], if length(R)>3 then (R[3]: bc, R) else endcons(bc, R));
+block2size(R):= xreduce("*", block2n(R));
+block2biggest_dir(R):= block([m: last(sort(block2n(R)))], first(sublist_indices(block2n(R), lambda([q], q=m))));
+
+block_list_find_biggest(blist):= block([nmax: 0, new_size, imax],
+  for i thru length(blist) do (new_size: block2size(part(blist, i)), if new_size>nmax then (nmax: new_size, imax: i)),
+  imax);
+
+block_list_splite_biggest(blist):= block([ idx: block_list_find_biggest(blist), dir, out: [], R1, R2],
+  dir: block2biggest_dir(part(blist, idx)),
+  [R1, R2]: split_block(part(blist, idx), dir, 'half),
+  for i thru length(blist) do if i#idx then out: endcons(part(blist, i), out) else out: append(out, [R1, R2]),
+  out);
+
+block_list2mshwbc(blist):= maplist('block2bc, blist);
 
 blockijk2xyz([l]):=apply('blockijk2xyz_aux, cons(first(l), flatten(rest(l))));
 blockijk2xyz_aux(R, i, j, k):= block([nlist: block2n(R), nidx,  B],

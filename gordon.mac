@@ -1,6 +1,8 @@
 load("spline-utils.mac");
 load("integer_sequence");
 load("elements.mac");
+load("spline2.mac");
+
 /* load("spline2.mac"); */
 create_rhs_output(fname, fbody)::= block([body: optimize(fbody)], buildq([body, fname],
     block(mode_declare([function(fname), u, v, q], flonum),
@@ -29,13 +31,16 @@ ijk2n_rev(i, j, k, nx, ny, nz):=block([prederror: true],
   if %revz% then k: nz - k + 1,
   (i-1) + (j-1)*nx + (k-1)*nx*ny);
 
+/* fake 3D parameters*/
+%Lz%: 2;
+%nz%: 2;
 output_block(B, c1lst, c2lst, [rev]):=block([lst1, lst2, lst3, u, v, q, nu, nv, nq, Rx, Ry, Rz, %revx%, %revy%, %revz%,
-  c3lst: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]],
+  c3lst: makelist(i, i, %nz%+1)],
   local(B, Bx, By, Bz),
   setup_rev(rev),
   define(Bx(u, v, q), create_rhs_output(Bx, float(part(B(u, v), 1)))),
   define(By(u, v, q), create_rhs_output(By, float(part(B(u, v), 2)))),
-  define(Bz(u, v, q), create_rhs_output(Bz, 2*q)),
+  define(Bz(u, v, q), create_rhs_output(Bz, %Lz%*q)),
   compile(Bx, By, Bz, ijk2n_rev),
   array(lst1, flonum, length(c1lst)-1),
   array(lst2, flonum, length(c2lst)-1),
@@ -141,6 +146,57 @@ output_block_extra(B, u_do_lst, v_do_lst, u_up_lst, v_up_lst, [rev]):=block([u_a
               Rz[idx]: Bz(u, v, q, u_do, v_do, u_up, v_up))))))),
   remarray(u_array, v_array, u_array_do, v_array_do, u_array_up, v_array_up, q_array),
   [[Rx, Ry, Rz], [nu, nv, nq]]);
+
+split_block(R, dir, split_loc):= block([nlist: block2n(R), B: block2array(R), nstart, nend,
+  n1size, n2size, n1, n2, n_old, n_new, R1x, R1y, R1z, R2x, R2y, R2z, listarith: true],
+  local(nlist, n2list, shift, nstart, nend, B),
+  if not every( lambda([q], q>1), nlist) then error("all dimension should be >1"),
+  if split_loc='half then split_loc: round(part(nlist, dir)/2),
+
+  nstart: [1, 1, 1],
+  nend  :    copylist(nlist),
+  nend[dir]: split_loc,
+  n1size: nend-nstart+1,
+  n1: xreduce("*", n1size),
+  R1x: make_array(flonum, n1), R1y: make_array(flonum, n1), R1z: make_array(flonum, n1),
+  for i: nstart[1] thru nend[1] do (
+    print(["split_block:", i]),
+    for j: nstart[2] thru nend[2] do
+    for k: nstart[3] thru nend[3] do (
+      n_old: apply('ijk2n, append([i, j, k], nlist)),
+      n_new: apply('ijk2n, append([i, j, k] - nstart + 1, n1size)),
+      R1x[n_new]: B[1][n_old],
+      R1y[n_new]: B[2][n_old],
+      R1z[n_new]: B[3][n_old]) ),
+  
+  nstart: [1, 1, 1],
+  nstart[dir]: split_loc,
+  nend: copylist(nlist),
+  n2size: nend-nstart+1,
+  n2: xreduce("*", n2size),
+  
+  R2x: make_array(flonum, n2), R2y: make_array(flonum, n2), R2z: make_array(flonum, n2),
+  for i: nstart[1] thru nend[1] do
+  for j: nstart[2] thru nend[2] do
+  for k: nstart[3] thru nend[3] do (
+    n_old: apply('ijk2n, append([i, j, k], nlist)),
+    n_new: apply('ijk2n, append([i, j, k] - nstart + 1, n2size)),
+    R2x[n_new]: B[1][n_old],
+    R2y[n_new]: B[2][n_old],
+    R2z[n_new]: B[3][n_old]),
+
+  if not block_has_bc(R) then 
+  [[[R1x, R1y, R1z], n1size],
+   [[R2x, R2y, R2z], n2size]]
+   else block([bc: block2bc(R), bc1, bc2],
+     bc1: copylist(bc),
+     bc1[dimanddip2face(dir, 1)]: 500,
+     bc2: copylist(bc),
+     bc2[dimanddip2face(dir, 0)]: 500,
+     [[[R1x, R1y, R1z], n1size, bc1],
+     [[R2x, R2y, R2z], n2size, bc2]]));
+
+
 
 /*
 blist: [Z]$

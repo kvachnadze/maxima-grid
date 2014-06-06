@@ -124,18 +124,6 @@ draw2d(xrange=[-rmax*1.1, 1.1*H], yrange=[-rmax*1.1, H],
   head_length = 0.05,
   color='black, vlistx, color='red, vlisty);
 
-o: openw("g.fmt");
-nblock: length(blist);
-printf(o, "~d~%", nblock);
-for bl in blist do printf(o, "~{~d ~}", block2n(bl));
-newline(o);
-for bindx thru length(blist) do block([bl: part(blist, bindx)],
-  write_data(first(block2array(bl)), o),
-  write_data(second(block2array(bl)), o),
-  write_data(third(block2array(bl)), o),
-  if bindx#length(blist) then newline(o));
-close(o);
-
 mshwbc : makelist([], i, length(blist));
 mshwbc[1]: [500, 500, 300, 130, 410, 410];
 mshwbc[2]: [500, 500, 300, 412, 410, 410];

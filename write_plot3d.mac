@@ -1,0 +1,13 @@
+write_plot3d(blist, pfile):= block([nblock, o],
+  o: openw(pfile),
+  nblock: length(blist),
+  printf(o, "~d~%", nblock),
+  for bl in blist do printf(o, "~{~d ~}", block2n(bl)),
+  newline(o),
+  for bindx thru length(blist) do block([bl: part(blist, bindx)],
+    write_data(first(block2array(bl)), o),
+    write_data(second(block2array(bl)), o),
+    write_data(third(block2array(bl)), o),
+    if bindx#length(blist) then newline(o)),
+  close(o));
+

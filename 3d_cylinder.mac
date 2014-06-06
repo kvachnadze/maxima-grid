@@ -1,0 +1,44 @@
+load("gordon.mac");
+load("write_topology.mac");
+load("write_plot3d.mac");
+Rmax: 8.0;
+Rmin: 1.0;
+%Lz%: 2.0;
+
+nx: 100;
+ny: 100;
+%nz%: 2;
+
+c1: create_arc([0, 0], Rmin, 0, 360);
+c3: create_arc([0, 0], Rmax, 0, 360);
+
+c2: create_line([Rmin, 0], [Rmax, 0]);
+c4: c2;
+
+B: gordon(c1, c2, c3, c4);
+R: output_block(B, makelist(i, i, nx), makelist(i, i, ny));
+bc: [130, 230, 300, 300, 300, 300]$
+R: block_set_bc(R, bc)$
+blist_sym: ['R]$
+blist: map('ev, blist_sym)$
+
+thru 10 do 
+blist: block_list_splite_biggest(blist)$
+
+vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+  rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$
+vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+          rest(v, -1)), block2vector(B, 2, 0.5)))), blist)$
+
+load("draw");
+draw2d(
+  point_type = 2, point_size=1,
+  color='blue,      pxy(blist[1]),
+  color='red,      pxy(blist[2]), 
+  line_width = 3,
+  head_length = 0.05,
+  color='black, vlistx, color='red, vlisty);
+
+mshwbc: block_list2mshwbc(blist);
+write_topology(blist, mshwbc, "g.topo");
+write_plot3d(blist, "g.fmt");

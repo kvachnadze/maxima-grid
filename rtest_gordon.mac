@@ -9,8 +9,31 @@ block([cm: create_par(0, 0, 1, 1), B],
   B('u, 'v));
 [1-u,v]$
 
-block([cm: create_par(0, 0, 1, 1), B],
+R: block([cm: create_par(0, 0, 1, 1), B],
   B: apply('gordon, cm),
-  output_block(B, makelist(i, i, 3), makelist(i, i, 3)));
+  output_block(B, makelist(i, i, 10), makelist(i, i, 20)))$
+R: block_set_bc(R, ['und, 'und, 'und, 'und, 'und, 'und])$
+[R1, R2]: split_block(R, 1, 'half)$
+load("draw");
+
+blist_sym: ['R1, 'R2]$
+blist: map('ev, blist_sym)$
+vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+  rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$
+vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
+          rest(v, -1)), block2vector(B, 2, 0.5)))), blist)$
+
+
+draw2d(
+  point_type = 7, point_size=6, 
+  color='blue,      pxy(R1), point_size=5, 
+  color='red,   pxy(R2),
+  line_width = 3,
+  head_length = 0.05,
+  color='black, vlistx, color='red, vlisty);
+
+block2bc(R1);
+block2bc(R2);
+
 
 
