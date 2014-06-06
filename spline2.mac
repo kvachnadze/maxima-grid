@@ -169,23 +169,6 @@ else error("ndim should be 1, 2 or 3"),
 list_to_zero_one(lst)::= buildq([lst],
   maplist(change_scale(first(lst), last(lst), 0, 1), lst));
 
-create_rhs_output(fname, fbody)::= block([body: optimize(fbody)], buildq([body, fname],
-    block(mode_declare([function(fname), u, v, q], flonum),
-      body)));
-
-ijk2n_rev(i, j, k, nx, ny, nz):=block([prederror: true],
-  mode_declare([i, j, k, nx, ny, nz], fixnum),
-  if %revx% then i: nx - i + 1,
-  if %revy% then j: ny - j + 1,
-  if %revz% then k: nz - k + 1,
-  (i-1) + (j-1)*nx + (k-1)*nx*ny);
-
-setup_rev(rev):=  if emptyp(rev)
-then (%revx%: false, %revy%: false, %revz%: false)
-else (rev: first(rev),
-  if not listp(rev) or length(rev)#3 then error("rev should be a list of length 3"),
-  %revx%: first(rev), %revy%: second(rev), %revz%: third(rev));
-
 /*
 P[1,4]: [0, 0];
 P[3,4]: [0, 1];

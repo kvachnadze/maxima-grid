@@ -1,6 +1,10 @@
 load("spline-utils.mac");
 load("integer_sequence");
+load("elements.mac");
 /* load("spline2.mac"); */
+create_rhs_output(fname, fbody)::= block([body: optimize(fbody)], buildq([body, fname],
+    block(mode_declare([function(fname), u, v, q], flonum),
+      body)));
 
 gordon(c1, c2, c3, c4):=
 (if not_approx_equal(c1(0), c2(0)) then error("gordon: c1(0) # c2(0)"),
@@ -11,6 +15,19 @@ gordon(c1, c2, c3, c4):=
     (1-'v)*c1('u)+'v*c3('u)+(1-'u)*c2('v)+'u*c4('v)-
     ((1-'u)*(1-'v)*c1(0)+'u*'v*c3(1)+'u*(1-'v)*c4(0)+(1-'u)*'v*c3(0)),
   lambda([u, v], body)));
+
+setup_rev(rev):=  if emptyp(rev)
+then (%revx%: false, %revy%: false, %revz%: false)
+else (rev: first(rev),
+  if not listp(rev) or length(rev)#3 then error("rev should be a list of length 3"),
+  %revx%: first(rev), %revy%: second(rev), %revz%: third(rev));
+
+ijk2n_rev(i, j, k, nx, ny, nz):=block([prederror: true],
+  mode_declare([i, j, k, nx, ny, nz], fixnum),
+  if %revx% then i: nx - i + 1,
+  if %revy% then j: ny - j + 1,
+  if %revz% then k: nz - k + 1,
+  (i-1) + (j-1)*nx + (k-1)*nx*ny);
 
 output_block(B, c1lst, c2lst, [rev]):=block([lst1, lst2, lst3, u, v, q, nu, nv, nq, Rx, Ry, Rz, %revx%, %revy%, %revz%,
   c3lst: [1, 2, 3]],

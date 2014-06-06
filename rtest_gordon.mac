@@ -1,0 +1,16 @@
+(kill(all), 'done);
+'done$
+
+(load("gordon.mac"), 'done);
+'done$
+
+block([cm: create_par(0, 0, 1, 1), B],
+  B: apply('gordon, cm),
+  B('u, 'v));
+[1-u,v]$
+
+block([cm: create_par(0, 0, 1, 1), B],
+  B: apply('gordon, cm),
+  output_block(B, makelist(i, i, 3), makelist(i, i, 3)));
+
+
