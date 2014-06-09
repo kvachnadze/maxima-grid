@@ -9,9 +9,17 @@ block([cm: create_par(0, 0, 1, 1), B],
   B('u, 'v));
 [1-u,v]$
 
+block([cm: create_par(0, 0, 2, 2), B],
+  B: apply('gordon, cm),
+  ratexpand(B('u, 'v)));
+[2-2*u,2*v]$
+
+/*
 R: block([cm: create_par(0, 0, 1, 1), B],
   B: apply('gordon, cm),
   output_block(B, makelist(i, i, 10), makelist(i, i, 20)))$
+
+
 R: block_set_bc(R, ['und, 'und, 'und, 'und, 'und, 'und])$
 [R1, R2]: split_block(R, 1, 'half)$
 load("draw");
@@ -35,5 +43,5 @@ draw2d(
 block2bc(R1);
 block2bc(R2);
 
-
+*/
 
