@@ -67,6 +67,17 @@ output_block(B, c1lst, c2lst, [rev]):=block([lst1, lst2, lst3, u, v, q, nu, nv, 
   remarray(lst1, lst2, lst3),
    [[Rx, Ry, Rz], [nu, nv, nq]]);
 
+output_block_simple(B, i_lst, j_lst, k_lst):= block([ni: length(i_lst),
+  nj: length(j_lst), nk: length(k_lst), n, idx, Rx, Ry, Rz],
+  n: ni*nj*nk,
+  Rx: make_array(flonum, n), Ry: make_array(flonum, n), Rz: make_array(flonum, n),
+  for i thru ni do
+  for j thru nj do
+  for k thru nk do (
+  idx: ijk2n(i, j, i),
+  [Rx[idx], Ry[idx], Rz[idx]]: B(i_lst[i], j_lst[j], k_lst[k])),
+  [[Rx, Ry, Rz], [ni, nj, nk]]);
+
 gordon_extra(c1, c2, c3, c4):=
 (if not_approx_equal(c1(0), c2(0)) then error("gordon: c1(0) # c2(0)"),
   if not_approx_equal(c1(1), c4(0)) then error("gordon: c1(1) # c4(0)"),
