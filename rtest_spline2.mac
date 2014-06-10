@@ -1,0 +1,5 @@
+(kill(all), 'done);
+'done$
+
+(load("spline2.mac"), 'done);
+'done$
