@@ -5,9 +5,9 @@ Lx: 8.0;
 Ly: 4.0;
 %Lz%: 4.0;
 
-nx: 100;
-ny: 50;
-%nz%: 20;
+nx: 360;
+ny: 160;
+%nz%: 140;
 
 cm: create_par(0, 0, Lx, Ly);
 B: apply('gordon, cm);
@@ -17,8 +17,9 @@ R: block_set_bc(R, bc)$
 blist_sym: ['R]$
 blist: map('ev, blist_sym)$
 
-thru 15 do 
-blist: block_list_splite_biggest(blist)$
+thru 63 do 
+blist: block_list_splite_biggest(blist)$ 
+/* blist: block_list_splite_x(blist)$ */
 
 vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
   rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$

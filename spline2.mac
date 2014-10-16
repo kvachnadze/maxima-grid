@@ -33,6 +33,12 @@ block_list_splite_biggest(blist):= block([ idx: block_list_find_biggest(blist), 
   for i thru length(blist) do if i#idx then out: endcons(part(blist, i), out) else out: append(out, [R1, R2]),
   out);
 
+block_list_splite_x(blist):= block([ idx: block_list_find_biggest(blist), dir, out: [], R1, R2],
+  dir: 1,
+  [R1, R2]: split_block(part(blist, idx), dir, 'half),
+  for i thru length(blist) do if i#idx then out: endcons(part(blist, i), out) else out: append(out, [R1, R2]),
+  out);
+
 block_list2mshwbc(blist):= maplist('block2bc, blist);
 
 blockijk2xyz([l]):=apply('blockijk2xyz_aux, cons(first(l), flatten(rest(l))));
