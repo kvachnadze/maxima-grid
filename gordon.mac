@@ -32,8 +32,10 @@ ijk2n_rev(i, j, k, nx, ny, nz):=block([prederror: true],
   (i-1) + (j-1)*nx + (k-1)*nx*ny);
 
 /* fake 3D parameters*/
+/*
 %Lz%: 2;
 %nz%: 2;
+*/
 output_block(B, c1lst, c2lst, [rev]):=block([lst1, lst2, lst3, u, v, q, nu, nv, nq, Rx, Ry, Rz, %revx%, %revy%, %revz%,
   c3lst: makelist(i, i, %nz%+1)],
   local(B, Bx, By, Bz),
@@ -162,7 +164,8 @@ split_block(R, dir, split_loc):= block([nlist: block2n(R), B: block2array(R), ns
   n1size, n2size, n1, n2, n_old, n_new, R1x, R1y, R1z, R2x, R2y, R2z, listarith: true],
   local(nlist, n2list, shift, nstart, nend, B),
   if not every( lambda([q], q>1), nlist) then error("all dimension should be >1"),
-  if split_loc='half then split_loc: round(part(nlist, dir)/2),
+  if split_loc='half and dir<0 then (dir: -dir, split_loc: part(nlist, dir) - round(part(nlist, dir)/2) + 1),
+  if split_loc='half and dir>0 then split_loc: round(part(nlist, dir)/2),
 
   nstart: [1, 1, 1],
   nend  :    copylist(nlist),
@@ -171,7 +174,7 @@ split_block(R, dir, split_loc):= block([nlist: block2n(R), B: block2array(R), ns
   n1: xreduce("*", n1size),
   R1x: make_array(flonum, n1), R1y: make_array(flonum, n1), R1z: make_array(flonum, n1),
   for i: nstart[1] thru nend[1] do (
-    print(["split_block:", i]),
+/*     if mod(i, 10)=1 then print(["split_block:", i]), */
     for j: nstart[2] thru nend[2] do
     for k: nstart[3] thru nend[3] do (
       n_old: apply('ijk2n, append([i, j, k], nlist)),
@@ -206,7 +209,6 @@ split_block(R, dir, split_loc):= block([nlist: block2n(R), B: block2array(R), ns
      bc2[dimanddip2face(dir, 0)]: 500,
      [[[R1x, R1y, R1z], n1size, bc1],
      [[R2x, R2y, R2z], n2size, bc2]]));
-
 
 
 /*

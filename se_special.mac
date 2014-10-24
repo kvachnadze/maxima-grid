@@ -1,5 +1,6 @@
 load("spline-utils.mac");
 load("se.mac");
+load("draw");
 
 se_special(x0, d1, d2, pstr, dfin, dmax):= block([l_up, s_up, nend, l_do, s_do, spl_up, spl_do, n2x_sol],
   if not pstr<=1 then error("`pstr' should be <= 1"),
@@ -36,6 +37,5 @@ load("se_special.mac");
 
 [spl_up, spl_do]: se_special(x0, d1, pstr, d2, dfin, dmax);
 
-load("draw");
 draw2d( points_joined=true, point_size=4, points(spl_up), 'color='red, points(spl_do));
 */
