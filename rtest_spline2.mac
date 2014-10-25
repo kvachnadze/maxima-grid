@@ -3,3 +3,72 @@
 
 (load("spline2.mac"), 'done);
 'done$
+
+(set_periodic([false, false, false]), %lshift%);
+[[0,0,0]]$
+
+(set_periodic([10, false, false]), %lshift%);
+[[0,0,0],[-10,0,0],[10,0,0]]$
+
+(set_periodic([1, 10, false]), %lshift%);
+[[0,0,0],[0,-10,0],[0,10,0],[-1,0,0],[1,0,0],[-1,-10,0],[-1,10,0],[1,-10,0],
+[1,10,0]]$
+
+(set_periodic([1, 10, 100]), %lshift%);
+[[0,0,0],[0,0,-100],[0,0,100],[0,-10,0],[0,10,0],[0,-10,-100],[0,-10,100],
+ [0,10,-100],[0,10,100],[-1,0,0],[1,0,0],[-1,0,-100],[-1,0,100],[1,0,-100],
+ [1,0,100],[-1,-10,0],[-1,10,0],[1,-10,0],[1,10,0],[-1,-10,-100],[-1,-10,100],
+ [-1,10,-100],[-1,10,100],[1,-10,-100],[1,-10,100],[1,10,-100],[1,10,100]]$
+
+
+(set_periodic([false, false, 10]), %lshift%, 'done);
+'done$
+
+vabs_periodic([0, 0, 0], [1, 1, 1]);
+sqrt(3)$
+
+vabs_periodic([0, 0, 0], [0, 0, 9]);
+1$
+
+vabs_periodic([0, 0, 0], [0, 5, 9]);
+sqrt(26)$
+
+(set_periodic([false, 1, 10]), %lshift%, 'done);
+'done$
+
+vabs_periodic([0, 0, 0], [0, 0.9, 0]);
+0.1$
+
+vabs_periodic([0, 1, 10], [0, 0, 0]);
+0$
+
+vabs_periodic([1, 1, 10], [0, 0, 0]);
+1$
+
+vabs_periodic([0, 9/10, 9], [0, 0, 0]);
+sqrt(101)/10$
+
+load("gordon.mac");
+Lx  : 8;
+Ly  : 8;
+%Lz%: 4;
+
+nx: 5;
+ny: 5;
+%nz%: 20;
+
+cm: create_par(0, 0, Lx, Ly);
+B: apply('gordon, cm);
+R: output_block(B, makelist(i, i, nx), makelist(i, i, ny), [true, false, false]);
+set_periodic([false, false, %Lz%]);
+bc: [130, 230, 300, 300, 300, 300]$
+R: block_set_bc(R, bc)$
+
+blist: block_list_splite_biggest([R])$
+
+%cshift%: [%lshift%[2]];
+c: blocks2faces_and_directions(blist[2], blist[1]);
+
+mshwbc: block_list2mshwbc(blist);
+load("write_topology.mac");
+write_topology(blist, mshwbc, "g.topo.ref");
