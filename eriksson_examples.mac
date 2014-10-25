@@ -61,7 +61,6 @@ numer: true;
 R1a:   output_block(B1a, phi_list, rad_list, [false, false, true])$
 
 load("draw");
-pxy(R)::=buildq([R], points(first(first(R)), second(first(R))));
 
 draw2d( point_size=1, color='red, point_type=circle, pxy(R1a));
 

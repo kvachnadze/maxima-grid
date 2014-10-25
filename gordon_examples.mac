@@ -57,7 +57,6 @@ R1a:   output_block(B1a, phi_list, rad_list, [false, false, true])$
 R1new: output_block(B1new, phi_list, rad_list, [false, false, true])$
 
 load("draw");
-pxy(R)::=buildq([R], points(first(first(R)), second(first(R))));
 
 /* draw2d( point_size=1, pxy(R1), point_type    = circle, color='red, pxy(R2))$ */
 p: block([u: map('c1extra, list_to_zero_one(phi_list))], points(map('first, u), map('second, u)))$
