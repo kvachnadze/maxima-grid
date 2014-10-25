@@ -83,6 +83,7 @@ write_spline_list(lst, fname):= block([flst: float(lst), out],
 */
 alength(e):=?second(?arraydims(e));
 pxy(R):=points(part(first(R), 1), part(first(R), 2));
+pxyz(R):=points(part(first(R), 1), part(first(R), 2), part(first(R), 3));
 
 /* a sum of squares for a list
 (%i1) vabs([a, b, c]);
