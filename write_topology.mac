@@ -4,6 +4,9 @@ nblock, nwin, npbc, nbbc, mshwin,
 blkcon, blkfac, blkdef, blkdir, mshwbcfam, mshwdf, mshtitle,
 mshcomment, mshtype, mshpers, cref, sref, xyzref],
 
+
+if not listp(%lshift%) then error("%lshift% is not defined, run set_periodic"),
+
 nblock: length(blist),
 nwin  : makelist(6, iblock, nblock),
 npbc  : makelist(0, iblock, nblock),
@@ -18,16 +21,18 @@ mshwbcfam : makelist(makelist(0, iwin, nwin[iblock]), iblock, nblock),
 for iblock1 thru nblock do
 for iblock2 thru nblock do block(
   [bl1: part(blist, iblock1),
-   bl2 : part(blist, iblock2), c],
-  c: blocks2faces_and_directions(bl1, bl2),
-  if not emptyp(c) then block([my_face: first(c), other_face: second(c)],
-    print([iblock1, iblock2]),
-    mshwbc[iblock1][my_face]:  500,
-    blkcon[iblock1]: cons([my_face, iblock2], blkcon[iblock1]),
-    blkfac[iblock1]: cons([my_face, other_face], blkfac[iblock1]),
-    blkdef[iblock1]: cons([my_face, win2idx(bl1, my_face)], blkdef[iblock1]),
-    blkdir[iblock1]: cons([my_face, c2nsmbdirection(c)], blkdir[iblock1]),
-    nbbc[iblock1]: nbbc[iblock1] + 1)),
+  bl2 : part(blist, iblock2), c],
+  for l in %lshift% do
+  block([%cshift%: [l]],
+    c: blocks2faces_and_directions(bl1, bl2),
+    if not emptyp(c) then block([my_face: first(c), other_face: second(c)],
+      print([iblock1, iblock2]),
+      mshwbc[iblock1][my_face]:  500,
+      blkcon[iblock1]: cons([my_face, iblock2], blkcon[iblock1]),
+      blkfac[iblock1]: cons([my_face, other_face], blkfac[iblock1]),
+      blkdef[iblock1]: cons([my_face, win2idx(bl1, my_face)], blkdef[iblock1]),
+      blkdir[iblock1]: cons([my_face, c2nsmbdirection(c)], blkdir[iblock1]),
+    nbbc[iblock1]: nbbc[iblock1] + 1))),
 
 /* sort by `my_face' value */
 blkcon: maplist(  lambda([q], maplist('second, q)), maplist('sort, blkcon)),

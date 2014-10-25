@@ -5,38 +5,33 @@ Lx: 8.0;
 Ly: 4.0;
 %Lz%: 4.0;
 
-nx: 360;
-ny: 160;
-%nz%: 140;
+nx: 50;
+ny: 20;
+%nz%: 20;
 
 cm: create_par(0, 0, Lx, Ly);
 B: apply('gordon, cm);
 R: output_block(B, makelist(i, i, nx), makelist(i, i, ny), [true, false, false]);
+/* bc: [130, 230, 300, 300, 300, 300]$ */
 bc: [130, 230, 300, 300, 300, 300]$
 R: block_set_bc(R, bc)$
 blist_sym: ['R]$
 blist: map('ev, blist_sym)$
 
-thru 63 do 
-blist: block_list_splite_biggest(blist)$ 
-/* blist: block_list_splite_x(blist)$ */
-
-vlistx: maplist( lambda([B], funmake('vector, maplist(lambda([v],
-  rest(v, -1)), block2vector(B, 1, 0.5)))), blist)$
-vlisty: maplist( lambda([B], funmake('vector, maplist(lambda([v],
-          rest(v, -1)), block2vector(B, 2, 0.5)))), blist)$
+thru 7 do
+blist: block_list_splite_biggest(blist)$
 
 load("draw");
-draw2d(
+draw3d(
   point_type = 2, point_size=1,
-  color='blue,      pxy(blist[1]), 
-  color='red,      pxy(blist[2]),
-  color='green,      pxy(blist[3]),
-  line_width = 3,
-  head_length = 0.05,
-  color='black, vlistx, color='red, vlisty);
-
+  color='blue,       pxyz(blist[1]), 
+  color='red,        pxyz(blist[2]),
+  color='green,      pxyz(blist[3]));
 
 mshwbc: block_list2mshwbc(blist);
+
+set_periodic([false, false, %Lz%]);
 write_topology(blist, mshwbc, "g.topo");
+  
 write_plot3d(blist, "g.fmt");
+

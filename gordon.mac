@@ -160,6 +160,9 @@ output_block_extra(B, u_do_lst, v_do_lst, u_up_lst, v_up_lst, [rev]):=block([u_a
   remarray(u_array, v_array, u_array_do, v_array_do, u_array_up, v_array_up, q_array),
   [[Rx, Ry, Rz], [nu, nv, nq]]);
 
+find_position(R, pos):= block([B: block2array(R)],
+  B[1][1]);
+
 split_block(R, dir, split_loc):= block([nlist: block2n(R), B: block2array(R), nstart, nend,
   n1size, n2size, n1, n2, n_old, n_new, R1x, R1y, R1z, R2x, R2y, R2z, listarith: true],
   local(nlist, n2list, shift, nstart, nend, B),

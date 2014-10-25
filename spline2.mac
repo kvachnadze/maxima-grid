@@ -4,8 +4,6 @@ load("elements.mac");
 
 /*draw2d(point_size=3, points ( [p1, p2, p3] )); */
 
-/* Transfinite interpolation */
-
 d2ijk(d):= if d=1 then 'i elseif d=2 then 'j elseif d=3 then 'k else error("d should be in [1, 3]");
 ijk2d(ijk):= if ijk='i then 1 elseif ijk='j then 2 elseif ijk='k then 3 else error("ijk should in [i, j, k]");
 
@@ -49,11 +47,13 @@ block_list_splite_biggest(blist):= block([ idx: block_list_find_biggest(blist), 
   for i thru length(blist) do if i#idx then out: endcons(part(blist, i), out) else out: append(out, [R1, R2]),
   out);
 
-block_list_splite_x(blist):= block([ idx: block_list_find_biggest(blist), dir, out: [], R1, R2],
-  dir: 1,
+block_list_splite_fixed_dir(blist, dir):= block([ idx: block_list_find_biggest(blist), out: [], R1, R2],
   [R1, R2]: split_block(part(blist, idx), dir, 'half),
   for i thru length(blist) do if i#idx then out: endcons(part(blist, i), out) else out: append(out, [R1, R2]),
   out);
+
+show_blist(blist):= maplist(rest, blist);
+
 
 block_list2mshwbc(blist):= maplist('block2bc, blist);
 
@@ -86,7 +86,7 @@ block2coners(R):= block([nlist: block2n(R), l, lm, p],
   p: maplist( lambda([q], blockijk2xyz(R, q)),  p),
   maplist("[", l, p));
 
-is_matching(p1, p2):= block([d: vabs(second(p1) - second(p2))], approx_equal(d, 0));
+is_matching(p1, p2):= block([d: vabs_periodic(second(p1), second(p2))], approx_equal(d, 0));
 
 /*
 (%o1) [[[1, 0, 0], [0, 0, 0]], [[1, 0, 1], [0, 0, 1]], [[1, 1, 0], [0, 1, 0]], 
@@ -243,10 +243,20 @@ split_wo_window(blist):= block([ib, d, out, pairs],
 
   for par in pairs do
   out: append(out, split_block(blist[first(par)], second(par), 'half)),
+out);
 
-  out);
 
+set_periodic(L_periodic):= block([shift, ndim: 3],
+  shift: listify( apply('cartesian_product, makelist({0, -1, 1}, ndim)) ),
+  shift: block([listarith: true], sort(shift, lambda([a, b], orderlessp(abs(a), abs(b))))),
+  %lshift%:     block([listarith: true], maplist(lambda([q], L_periodic*q), shift)),
+  %lshift%:     sublist( %lshift%, lambda([q], every(numberp, q))));
 
+vabs_periodic(ra, rb):= (if not listp(%cshift%) then error("set %cshift% befor using vabs_periodic"),
+  catch(xreduce('min, maplist( lambda([q],
+      block([d: vabs(ra + q - rb)],
+        if approx_equal(d, 0) then throw(0) else d)),
+    %cshift%))));
 
 /*
 P[1,4]: [0, 0];
