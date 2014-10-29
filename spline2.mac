@@ -243,8 +243,20 @@ split_wo_window(blist):= block([ib, d, out, pairs],
 
   for par in pairs do
   out: append(out, split_block(blist[first(par)], second(par), 'half)),
-out);
+  out);
 
+split_wo_window_fixed(blist, dir):= block([ib, out, pairs],
+  ib: block_list_find_biggest(blist), local(out),
+  pairs: find_connected_rec(blist, ib, dir),
+  out: [],
+
+  for ib thru length(blist) do
+  if not member(ib, map('first, pairs))
+  then out : endcons(blist[ib], out),
+
+  for par in pairs do
+  out: append(out, split_block(blist[first(par)], second(par), 'half)),
+out);
 
 set_periodic(L_periodic):= block([shift, ndim: 3],
   shift: listify( apply('cartesian_product, makelist({0, -1, 1}, ndim)) ),
@@ -252,11 +264,12 @@ set_periodic(L_periodic):= block([shift, ndim: 3],
   %lshift%:     block([listarith: true], maplist(lambda([q], L_periodic*q), shift)),
   %lshift%:     sublist( %lshift%, lambda([q], every(numberp, q))));
 
-vabs_periodic(ra, rb):= (if not listp(%cshift%) then error("set %cshift% befor using vabs_periodic"),
-  catch(xreduce('min, maplist( lambda([q],
-      block([d: vabs(ra + q - rb)],
-        if approx_equal(d, 0) then throw(0) else d)),
-    %cshift%))));
+vabs_periodic(ra, rb):= block([%cshift%: %cshift%],
+  (if not listp(%cshift%) then %cshift%: [[0, 0, 0]],
+    catch(xreduce('min, maplist( lambda([q],
+            block([d: vabs(ra + q - rb)],
+              if approx_equal(d, 0) then throw(0) else d)),
+          %cshift%)))));
 
 /*
 P[1,4]: [0, 0];
