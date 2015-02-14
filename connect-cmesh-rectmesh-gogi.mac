@@ -137,11 +137,21 @@ mshwbc[6]: [230, 500, 500, 412, 410, 410];
 */
 
 
-while length(blist)<512 do (
+while length(blist)<62 do (
   print(length(blist)),
   blist: split_wo_window(blist))$
 
+thru 2 do
+blist: split_wo_window_fixed(blist,2)$
+
+blist: split_wo_window_fixed(blist,3)$
+
+set_periodic([false, false, %Lz%]);
 write_plot3d(blist, "g_splitter.fmt");
 mshwbc: block_list2mshwbc(blist);
 
 write_topology(blist, mshwbc, "g_splitter.topo");
+
+with_stdout("nblock.dat",
+printf(true, "~d~%", length(blist)),
+for bl in blist do printf(true, "~{~d ~}", block2n(bl)));

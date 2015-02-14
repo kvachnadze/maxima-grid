@@ -5,9 +5,9 @@ Lx: 8.0;
 Ly: 4.0;
 %Lz%: 4.0;
 
-nx: 50;
-ny: 20;
-%nz%: 20;
+nx: 360;
+ny: 160;
+%nz%: 140;
 
 cm: create_par(0, 0, Lx, Ly);
 B: apply('gordon, cm);
@@ -18,15 +18,17 @@ R: block_set_bc(R, bc)$
 blist_sym: ['R]$
 blist: map('ev, blist_sym)$
 
-thru 7 do
+thru 255 do
 blist: block_list_splite_biggest(blist)$
 
+/*
 load("draw");
 draw3d(
   point_type = 2, point_size=1,
   color='blue,       pxyz(blist[1]), 
   color='red,        pxyz(blist[2]),
   color='green,      pxyz(blist[3]));
+*/
 
 mshwbc: block_list2mshwbc(blist);
 
